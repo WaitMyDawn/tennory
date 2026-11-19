@@ -8,7 +8,6 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="${mod_authors}"
 description="${mod_description}"
-enumExtensions="META-INF/enumextensions.json"
 
 [[mixins]]
 config="tennory.mixins.json"

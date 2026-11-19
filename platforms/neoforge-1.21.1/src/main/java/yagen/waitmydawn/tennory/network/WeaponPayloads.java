@@ -31,7 +31,7 @@ public final class WeaponPayloads {
     }
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar("5")
+        event.registrar("7")
                 .playToServer(SpecialAction.TYPE, StreamCodec.unit(SpecialAction.INSTANCE), (payload, context) -> {
                     if (!(context.player() instanceof ServerPlayer player) || !player.isAlive() || player.isSpectator()) {
                         return;
@@ -52,6 +52,11 @@ public final class WeaponPayloads {
                 })
                 .playToClient(GlaiveFlightState.TYPE, GlaiveFlightState.STREAM_CODEC,
                         (payload, context) -> context.player().setData(TennoryRegistries.CLIENT_GLAIVE_IN_FLIGHT, payload.active()))
+                .playToClient(GlaiveThrowGesture.TYPE, GlaiveThrowGesture.STREAM_CODEC, (payload, context) -> {
+                    if (context.player().level().getEntity(payload.playerId()) instanceof Player player) {
+                        player.setData(TennoryRegistries.CLIENT_GLAIVE_THROW_TICK, payload.startTick());
+                    }
+                })
                 .playToClient(GlaiveBurst.TYPE, GlaiveBurst.STREAM_CODEC, (payload, context) -> payload.show(context.player()));
     }
 
@@ -64,6 +69,11 @@ public final class WeaponPayloads {
     public static void sendGlaiveBurst(ServerLevel level, Vec3 center) {
         PacketDistributor.sendToPlayersNear(level, null, center.x, center.y, center.z, 32.0,
                 new GlaiveBurst(center.x, center.y, center.z));
+    }
+
+    public static void sendGlaiveThrow(ServerPlayer player) {
+        PacketDistributor.sendToPlayersTrackingEntity(player,
+                new GlaiveThrowGesture(player.getId(), player.level().getGameTime()));
     }
 
     public static void sendVolleyGesture(ServerPlayer player, VolleyProfile profile, int chamber) {
@@ -105,6 +115,19 @@ public final class WeaponPayloads {
 
         @Override
         public Type<GlaiveFlightState> type() {
+            return TYPE;
+        }
+    }
+
+    private record GlaiveThrowGesture(int playerId, long startTick) implements CustomPacketPayload {
+        private static final Type<GlaiveThrowGesture> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(Tennory.MODID, "glaive_throw_gesture"));
+        private static final StreamCodec<RegistryFriendlyByteBuf, GlaiveThrowGesture> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, GlaiveThrowGesture::playerId,
+                ByteBufCodecs.VAR_LONG, GlaiveThrowGesture::startTick, GlaiveThrowGesture::new);
+
+        @Override
+        public Type<GlaiveThrowGesture> type() {
             return TYPE;
         }
     }

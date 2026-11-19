@@ -7,7 +7,7 @@ public final class ClientConfigs {
 
     public static final ModConfigSpec.BooleanValue SHOW_GLAIVE_BLAST_RADIUS = BUILDER
             .comment("Render the particle ring that marks the Glaive explosion radius.")
-            .define("showGlaiveBlastRadius", true);
+            .define("showGlaiveBlastRadius", false);
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     private ClientConfigs() {

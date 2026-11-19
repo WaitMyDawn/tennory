@@ -3,6 +3,7 @@ package yagen.waitmydawn.tennory.client;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
+import yagen.waitmydawn.tennory.client.WeaponPlayerPose.Stance;
 import yagen.waitmydawn.tennory.combat.VolleyProfile;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
 import yagen.waitmydawn.tennory.weapon.VolleyWeaponItem;
@@ -100,24 +101,4 @@ final class VolleyMotion {
         }
     }
 
-    record Stance(float yaw, float pitch, float roll, float lean, float drop, float fore, float stride)
-            implements Keyframe<Stance> {
-        private static final Stance REST = new Stance(0, 0, 0, 0, 0, 0, 0);
-
-        @Override
-        public Stance rest() {
-            return REST;
-        }
-
-        Stance mirror(float side) {
-            return new Stance(yaw * side, pitch, roll * side, lean * side, drop, fore, stride * side);
-        }
-
-        @Override
-        public Stance lerp(Stance to, float t) {
-            return new Stance(Mth.lerp(t, yaw, to.yaw), Mth.lerp(t, pitch, to.pitch), Mth.lerp(t, roll, to.roll),
-                    Mth.lerp(t, lean, to.lean), Mth.lerp(t, drop, to.drop), Mth.lerp(t, fore, to.fore),
-                    Mth.lerp(t, stride, to.stride));
-        }
-    }
 }

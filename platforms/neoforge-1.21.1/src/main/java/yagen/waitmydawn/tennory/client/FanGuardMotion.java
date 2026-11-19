@@ -3,15 +3,15 @@ package yagen.waitmydawn.tennory.client;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import org.joml.Vector3f;
-import yagen.waitmydawn.tennory.client.FanGuardRig.ArmPose;
-import yagen.waitmydawn.tennory.client.VolleyMotion.Stance;
+import yagen.waitmydawn.tennory.client.WeaponArmRig.ArmPose;
+import yagen.waitmydawn.tennory.client.WeaponPlayerPose.Stance;
 import yagen.waitmydawn.tennory.combat.VolleyProfile;
 
 final class FanGuardMotion {
     private static final Pose GUARD = new Pose(
             ArmPose.facing(new Vector3f(0.17F, 0.69F, -0.70F), new Vector3f(-0.83F, 0.16F, -0.54F),
                     new Vector3f(0.10F, 0.99F, -0.10F), new Vector3f(-0.30F, -0.14F, 0.94F))
-                    .rollFan(Mth.HALF_PI),
+                    .rollGrip(Mth.HALF_PI),
             ArmPose.facing(new Vector3f(-0.47F, 0.39F, -0.79F), new Vector3f(-0.18F, -0.94F, -0.29F),
                     new Vector3f(-0.32F, -0.89F, -0.18F), new Vector3f(0.97F, -0.05F, 0.23F)),
             new Stance(0, 0, 0, 0, 0, 0, 0));

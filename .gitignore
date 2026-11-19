@@ -17,3 +17,5 @@ replay_pid*.log
 __pycache__/
 
 DEVELOPMENT.md
+/docs/*
+!/docs/readme-media/

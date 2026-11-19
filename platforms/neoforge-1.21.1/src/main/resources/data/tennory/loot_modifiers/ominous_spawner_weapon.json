@@ -1,0 +1,10 @@
+{
+  "type": "tennory:append_independent_table",
+  "conditions": [
+    {
+      "condition": "neoforge:loot_table_id",
+      "loot_table_id": "minecraft:spawners/ominous/trial_chamber/consumables"
+    }
+  ],
+  "table": "tennory:spawners/ominous/trial_chamber/weapon_bonus"
+}

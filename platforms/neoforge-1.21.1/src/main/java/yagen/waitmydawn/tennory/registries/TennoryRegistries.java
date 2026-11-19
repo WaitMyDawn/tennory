@@ -1,6 +1,7 @@
 package yagen.waitmydawn.tennory.registries;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -11,6 +12,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -21,6 +23,7 @@ import yagen.waitmydawn.tennory.glaive.GlaiveFlightItem;
 import yagen.waitmydawn.tennory.glaive.GlaiveItem;
 import yagen.waitmydawn.tennory.glaive.GlaiveProjectile;
 import yagen.waitmydawn.tennory.glaive.GlaiveReadiness;
+import yagen.waitmydawn.tennory.loot.AppendIndependentTableModifier;
 import yagen.waitmydawn.tennory.network.WeaponPayloads;
 import yagen.waitmydawn.tennory.weapon.QuassusItem;
 import yagen.waitmydawn.tennory.weapon.RedeemerItem;
@@ -37,6 +40,8 @@ public final class TennoryRegistries {
             DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, Tennory.MODID);
     private static final DeferredRegister<DataComponentType<?>> COMPONENTS =
             DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, Tennory.MODID);
+    private static final DeferredRegister<MapCodec<? extends IGlobalLootModifier>> LOOT_MODIFIERS =
+            DeferredRegister.create(NeoForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS, Tennory.MODID);
 
     public static final DeferredItem<GlaiveItem> GLAIVE = ITEMS.registerItem("glaive", GlaiveItem::new);
     public static final DeferredItem<RedeemerItem> REDEEMER = ITEMS.registerItem("redeemer", RedeemerItem::new);
@@ -72,6 +77,8 @@ public final class TennoryRegistries {
                     .build());
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> CLIENT_GLAIVE_IN_FLIGHT =
             ATTACHMENTS.register("client_glaive_in_flight", () -> AttachmentType.builder(() -> false).build());
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Long>> CLIENT_GLAIVE_THROW_TICK =
+            ATTACHMENTS.register("client_glaive_throw_tick", () -> AttachmentType.builder(() -> Long.MIN_VALUE).build());
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<GlaiveReadiness>> GLAIVE_READINESS =
             ATTACHMENTS.register("glaive_readiness", () -> AttachmentType.builder(GlaiveReadiness::new).build());
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<WeaponPayloads.VolleyGesture>> VOLLEY_GESTURE =
@@ -81,6 +88,7 @@ public final class TennoryRegistries {
     }
 
     public static void register(IEventBus modBus) {
+        LOOT_MODIFIERS.register("append_independent_table", () -> AppendIndependentTableModifier.CODEC);
         TABS.register("items", () -> CreativeModeTab.builder()
                 .title(Component.translatable("creativetab.tennory.items"))
                 .icon(() -> new ItemStack(GLAIVE.get()))
@@ -95,5 +103,6 @@ public final class TennoryRegistries {
         TABS.register(modBus);
         ATTACHMENTS.register(modBus);
         COMPONENTS.register(modBus);
+        LOOT_MODIFIERS.register(modBus);
     }
 }

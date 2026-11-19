@@ -1,9 +1,11 @@
 package yagen.waitmydawn.tennory.weapon;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -21,8 +23,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import yagen.waitmydawn.tennory.Tennory;
-import yagen.waitmydawn.tennory.combat.Spread;
 import yagen.waitmydawn.tennory.combat.VolleyProfile;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
 
@@ -35,12 +37,19 @@ public final class VolleyProjectile extends Projectile {
             SynchedEntityData.defineId(VolleyProjectile.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> STOPPED =
             SynchedEntityData.defineId(VolleyProjectile.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Long> LAUNCH_TICK =
-            SynchedEntityData.defineId(VolleyProjectile.class, EntityDataSerializers.LONG);
+    private static final EntityDataAccessor<CompoundTag> LAUNCH =
+            SynchedEntityData.defineId(VolleyProjectile.class, EntityDataSerializers.COMPOUND_TAG);
+
     private float rayDamage;
     private double traveled;
     private VolleyWeaponItem.ShotSound shotSound;
-    private boolean released;
+    private long launchTick;
+    @Nullable
+    private Rays rays;
+    @Nullable
+    private double[] visualImpactDepths;
+    private int visuallyStopped;
+    private double checkedVisualDepth;
 
     public VolleyProjectile(EntityType<? extends VolleyProjectile> type, Level level) {
         super(type, level);
@@ -51,12 +60,10 @@ public final class VolleyProjectile extends Projectile {
         this(TennoryRegistries.VOLLEY_PROJECTILE.get(), owner.level());
         setOwner(owner);
         this.shotSound = shotSound;
-        setPos(owner.getEyePosition().add(0.0, -0.21, 0.0));
-        setYRot(owner.getYRot());
-        setXRot(owner.getXRot());
+        setPos(muzzle(owner));
         entityData.set(PROFILE, profile.ordinal());
         entityData.set(CHAMBER, chamber);
-        entityData.set(LAUNCH_TICK, level().getGameTime() + profile.releaseTicks());
+        launchTick = level().getGameTime() + profile.releaseTicks();
         rayDamage = (float) (damage / profile.rays(chamber).size());
     }
 
@@ -65,26 +72,64 @@ public final class VolleyProjectile extends Projectile {
         data.define(PROFILE, 0);
         data.define(CHAMBER, 0);
         data.define(STOPPED, 0);
-        data.define(LAUNCH_TICK, 0L);
+        data.define(LAUNCH, new CompoundTag());
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> accessor) {
+        super.onSyncedDataUpdated(accessor);
+        if (!level().isClientSide() || !LAUNCH.equals(accessor)) {
+            return;
+        }
+        CompoundTag data = entityData.get(LAUNCH);
+        Vec3 origin = new Vec3(data.getDouble("x"), data.getDouble("y"), data.getDouble("z"));
+        rays = createRays(origin, data.getFloat("yaw"), data.getFloat("pitch"));
+        // Use the entity's local age after the launch snapshot so clock corrections cannot rewind the tracers.
+        launchTick = tickCount - Math.max(0L, level().getGameTime() - data.getLong("tick"));
     }
 
     public VolleyProfile profile() {
         return VolleyProfile.values()[entityData.get(PROFILE)];
     }
 
+    @Nullable
     public Rays rays() {
-        Vec3 forward = Vec3.directionFromRotation(getXRot(), getYRot());
-        Vec3 right = Vec3.directionFromRotation(0.0F, getYRot() + 90.0F);
-        return new Rays(forward, right, right.cross(forward), profile().rays(entityData.get(CHAMBER)));
+        return rays;
     }
 
     public double renderedDepth(float partialTick) {
-        double age = level().getGameTime() - entityData.get(LAUNCH_TICK) - 1.0 + partialTick;
+        if (rays == null) {
+            return 0.0;
+        }
+        long tick = level().isClientSide() ? tickCount : level().getGameTime();
+        double age = tick - launchTick - 1.0 + partialTick;
         return Math.clamp(age * profile().speed(), 0.0, VolleyProfile.RANGE);
     }
 
-    public boolean stopped(int index) {
-        return (entityData.get(STOPPED) & (1 << index)) != 0;
+    public boolean stopped(int index, double depth) {
+        return (entityData.get(STOPPED) & (1 << index)) != 0
+                || visualImpactDepths != null && depth >= visualImpactDepths[index];
+    }
+
+    public void traceVisualImpacts(double depth) {
+        Rays shot = rays;
+        if (!level().isClientSide() || shot == null || depth <= checkedVisualDepth) {
+            return;
+        }
+        if (visualImpactDepths == null) {
+            visualImpactDepths = new double[shot.directions().size()];
+            Arrays.fill(visualImpactDepths, Double.POSITIVE_INFINITY);
+        }
+        double[] impactDepths = visualImpactDepths;
+        double speed = profile().speed();
+        double endDepth = Math.min(VolleyProfile.RANGE, Math.ceil(depth / speed) * speed);
+        // Trace once per travel step. This bounds the render before the server's hit mask arrives.
+        visuallyStopped = traceSegment(shot, checkedVisualDepth, endDepth, visuallyStopped | entityData.get(STOPPED),
+                (index, impact) -> {
+                    Vec3 direction = shot.directions().get(index);
+                    impactDepths[index] = impact.position().subtract(shot.origin()).dot(direction) / direction.lengthSqr();
+                });
+        checkedVisualDepth = endDepth;
     }
 
     @Override
@@ -105,81 +150,126 @@ public final class VolleyProjectile extends Projectile {
             discard();
             return;
         }
-        if (!released) {
-            if (level().getGameTime() < entityData.get(LAUNCH_TICK)) {
-                return;
+        if (rays == null) {
+            if (level().getGameTime() >= launchTick) {
+                release(owner);
+                super.tick();
             }
-            // Aim is sampled at release so the player can track a target during the wind-up.
-            setPos(owner.getEyePosition().add(0.0, -0.21, 0.0));
-            setYRot(owner.getYRot());
-            setXRot(owner.getXRot());
-            level().playSound(null, getX(), getY(), getZ(), shotSound.event(), SoundSource.PLAYERS,
-                    shotSound.volume(), shotSound.pitchFor(entityData.get(CHAMBER)));
-            released = true;
-            super.tick();
             return;
         }
         super.tick();
-        Rays rays = rays();
         int stopped = entityData.get(STOPPED);
-        int count = rays.pattern().size();
-        if (stopped == (1 << count) - 1) {
+        if (stopped == (1 << rays.directions().size()) - 1) {
             discard();
             return;
         }
         double endDepth = Math.min(VolleyProfile.RANGE, traveled + profile().speed());
-        AABB bounds = new AABB(position().add(rays.forward().scale(traveled)), position().add(rays.forward().scale(endDepth)));
-        for (int index = 0; index < count; index++) {
-            Vec3 end = position().add(rays.direction(index).scale(endDepth));
-            bounds = bounds.minmax(new AABB(end, end));
-        }
-        List<Entity> candidates = level().getEntities(this, bounds.inflate(0.15),
-                target -> target != owner && canHitEntity(target));
         Map<Entity, Integer> hits = new LinkedHashMap<>();
-        for (int index = 0; index < count; index++) {
-            if ((stopped & (1 << index)) != 0) {
-                continue;
+        int newMask = traceSegment(rays, traveled, endDepth, stopped, (index, impact) -> {
+            if (impact.target() != null) {
+                hits.merge(impact.target(), 1, Integer::sum);
             }
-            Vec3 direction = rays.direction(index);
-            Vec3 from = position().add(direction.scale(traveled));
-            Vec3 end = position().add(direction.scale(endDepth));
-            var block = level().clip(new ClipContext(from, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
-            Vec3 limit = block.getLocation();
-            Entity hit = nearestTarget(candidates, from, limit);
-            if (hit != null) {
-                hits.merge(hit, 1, Integer::sum);
-            }
-            if (hit != null || block.getType() != HitResult.Type.MISS) {
-                stopped |= 1 << index;
-            }
-        }
+        });
         if (!hits.isEmpty()) {
             DamageSource source = damageSources().source(VOLLEY_DAMAGE, this, owner);
             // One hit event per target keeps armor and knockback independent of pellet order.
             hits.forEach((target, pellets) -> target.hurt(source, rayDamage * pellets));
         }
-        entityData.set(STOPPED, stopped);
+        entityData.set(STOPPED, newMask);
         traveled = endDepth;
     }
 
-    private static Entity nearestTarget(List<Entity> candidates, Vec3 from, Vec3 limit) {
+    private void release(Entity owner) {
+        // Freeze both origin and aim at release, before position and rotation tracking can arrive independently.
+        Vec3 origin = muzzle(owner);
+        float yaw = owner.getYRot();
+        float pitch = owner.getXRot();
+        launchTick = level().getGameTime();
+        rays = createRays(origin, yaw, pitch);
+        setPos(origin);
+        CompoundTag data = new CompoundTag();
+        data.putDouble("x", origin.x);
+        data.putDouble("y", origin.y);
+        data.putDouble("z", origin.z);
+        data.putFloat("yaw", yaw);
+        data.putFloat("pitch", pitch);
+        data.putLong("tick", launchTick);
+        entityData.set(LAUNCH, data);
+        level().playSound(null, origin.x, origin.y, origin.z, shotSound.event(), SoundSource.PLAYERS,
+                shotSound.volume(), shotSound.pitchFor(entityData.get(CHAMBER)));
+    }
+
+    private Rays createRays(Vec3 origin, float yaw, float pitch) {
+        Vec3 forward = Vec3.directionFromRotation(pitch, yaw);
+        Vec3 right = Vec3.directionFromRotation(0.0F, yaw + 90.0F);
+        Vec3 up = right.cross(forward);
+        List<Vec3> directions = profile().rays(entityData.get(CHAMBER)).stream()
+                .map(ray -> forward.add(right.scale(ray.right())).add(up.scale(ray.up())))
+                .toList();
+        return new Rays(origin, forward, up, directions);
+    }
+
+    private int traceSegment(Rays shot, double startDepth, double endDepth, int stopped, ImpactConsumer onImpact) {
+        if (stopped == (1 << shot.directions().size()) - 1) {
+            return stopped;
+        }
+        Vec3 origin = shot.origin();
+        AABB bounds = new AABB(origin.add(shot.forward().scale(startDepth)), origin.add(shot.forward().scale(endDepth)));
+        for (Vec3 direction : shot.directions()) {
+            Vec3 end = origin.add(direction.scale(endDepth));
+            bounds = bounds.minmax(new AABB(end, end));
+        }
+        Entity owner = getOwner();
+        List<Entity> candidates = level().getEntities(this, bounds.inflate(0.15),
+                target -> target != owner && canHitEntity(target));
+        for (int index = 0; index < shot.directions().size(); index++) {
+            int bit = 1 << index;
+            if ((stopped & bit) != 0) {
+                continue;
+            }
+            Vec3 direction = shot.directions().get(index);
+            Vec3 from = origin.add(direction.scale(startDepth));
+            Vec3 end = origin.add(direction.scale(endDepth));
+            Impact impact = firstImpact(from, end, candidates);
+            if (impact != null) {
+                stopped |= bit;
+                onImpact.hit(index, impact);
+            }
+        }
+        return stopped;
+    }
+
+    @Nullable
+    private Impact firstImpact(Vec3 from, Vec3 end, List<Entity> candidates) {
+        var block = level().clip(new ClipContext(from, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
+        Vec3 limit = block.getLocation();
         double nearest = from.distanceToSqr(limit);
-        Entity result = null;
-        for (Entity target : candidates) {
-            AABB box = target.getBoundingBox();
+        Entity target = null;
+        Vec3 position = limit;
+        for (Entity candidate : candidates) {
+            AABB box = candidate.getBoundingBox();
             Vec3 hit = box.contains(from) ? from : box.clip(from, limit).orElse(null);
             if (hit != null && from.distanceToSqr(hit) < nearest) {
                 nearest = from.distanceToSqr(hit);
-                result = target;
+                target = candidate;
+                position = hit;
             }
         }
-        return result;
+        return target != null || block.getType() != HitResult.Type.MISS ? new Impact(position, target) : null;
     }
 
-    public record Rays(Vec3 forward, Vec3 right, Vec3 up, List<Spread.Ray> pattern) {
-        public Vec3 direction(int index) {
-            Spread.Ray ray = pattern.get(index);
-            return forward.add(right.scale(ray.right())).add(up.scale(ray.up()));
-        }
+    private static Vec3 muzzle(Entity owner) {
+        return owner.getEyePosition().add(0.0, -0.21, 0.0);
+    }
+
+    public record Rays(Vec3 origin, Vec3 forward, Vec3 up, List<Vec3> directions) {
+    }
+
+    private record Impact(Vec3 position, @Nullable Entity target) {
+    }
+
+    @FunctionalInterface
+    private interface ImpactConsumer {
+        void hit(int index, Impact impact);
     }
 }

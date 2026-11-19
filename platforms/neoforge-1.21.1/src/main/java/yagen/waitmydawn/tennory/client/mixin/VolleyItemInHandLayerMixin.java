@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import yagen.waitmydawn.tennory.client.GlaiveAnimations;
 import yagen.waitmydawn.tennory.client.VolleyAnimations;
 
 @Mixin(ItemInHandLayer.class)
@@ -22,7 +23,8 @@ abstract class VolleyItemInHandLayerMixin {
                                           PoseStack poses, MultiBufferSource buffers, int light, CallbackInfo callback) {
         var layer = (ItemInHandLayer<?, ?>) (Object) this;
         if (entity instanceof AbstractClientPlayer player && layer.getParentModel() instanceof PlayerModel<?> model
-                && VolleyAnimations.renderHeld(model, player, stack, arm, poses, buffers, light)) {
+                && (GlaiveAnimations.renderHeld(model, player, stack, arm, poses, buffers, light)
+                || VolleyAnimations.renderHeld(model, player, stack, arm, poses, buffers, light))) {
             callback.cancel();
         }
     }

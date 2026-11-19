@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:generic",
+  "pools": [
+    {
+      "name": "TennoryWeaponPool",
+      "rolls": 1,
+      "entries": [
+        { "type": "minecraft:item", "name": "tennory:glaive" },
+        { "type": "minecraft:item", "name": "tennory:redeemer" },
+        { "type": "minecraft:item", "name": "tennory:quassus" }
+      ]
+    }
+  ]
+}

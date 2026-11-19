@@ -1,0 +1,15 @@
+{
+  "type": "tennory:append_independent_table",
+  "conditions": [
+    {
+      "condition": "neoforge:loot_table_id",
+      "loot_table_id": "minecraft:chests/trial_chambers/reward_ominous"
+    },
+    {
+      "condition": "minecraft:entity_properties",
+      "entity": "this",
+      "predicate": { "type": "minecraft:player" }
+    }
+  ],
+  "table": "tennory:chests/trial_chambers/ominous_weapon_bonus"
+}

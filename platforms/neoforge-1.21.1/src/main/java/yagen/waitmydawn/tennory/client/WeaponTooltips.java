@@ -32,6 +32,9 @@ public final class WeaponTooltips {
                     Component.keybind("key.tennory.weapon_special")).withStyle(ChatFormatting.GRAY));
             return;
         }
+        tooltip.add(Component.translatable("tooltip.tennory.glaive.mode",
+                GlaiveWeaponItem.modeName(GlaiveWeaponItem.detonatesOnImpact(event.getItemStack())))
+                .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.tennory.glaive.throw", Component.keybind("key.use"))
                 .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.tennory.glaive.detonate", Component.keybind("key.tennory.weapon_special"))

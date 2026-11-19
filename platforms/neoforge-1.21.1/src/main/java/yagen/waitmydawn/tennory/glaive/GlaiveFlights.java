@@ -62,6 +62,7 @@ public final class GlaiveFlights {
             return;
         }
         WeaponPayloads.sendFlightState(player, true);
+        WeaponPayloads.sendGlaiveThrow(player);
         player.swing(InteractionHand.MAIN_HAND, true);
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, 0.7F, 1.2F);

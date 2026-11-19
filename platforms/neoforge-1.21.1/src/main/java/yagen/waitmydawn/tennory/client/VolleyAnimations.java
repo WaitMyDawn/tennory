@@ -1,7 +1,6 @@
 package yagen.waitmydawn.tennory.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import java.util.Map;
 import java.util.WeakHashMap;
 import net.minecraft.client.Minecraft;
@@ -10,7 +9,6 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -29,6 +27,8 @@ import net.neoforged.neoforge.client.event.RenderPlayerEvent;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import yagen.waitmydawn.tennory.Tennory;
+import yagen.waitmydawn.tennory.client.WeaponPlayerPose.BaseOffsets;
+import yagen.waitmydawn.tennory.client.WeaponPlayerPose.Stance;
 import yagen.waitmydawn.tennory.combat.VolleyProfile;
 import yagen.waitmydawn.tennory.weapon.FanItem;
 import yagen.waitmydawn.tennory.weapon.GunbladeItem;
@@ -56,7 +56,7 @@ public final class VolleyAnimations {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void finishPlayerPose(RenderPlayerEvent.Post event) {
-        ((FanGuardRig.Access) event.getRenderer().getModel()).tennory$finishVolleyPose();
+        ((WeaponArmRig.Access) event.getRenderer().getModel()).tennory$finishWeaponPose();
     }
 
     @SubscribeEvent
@@ -145,8 +145,8 @@ public final class VolleyAnimations {
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
         if (fan) {
-            FanGuardRig rig = ((FanGuardRig.Access) model).tennory$fanGuardRig();
-            FanGuardRig.Grip grip = rig == null ? null : rig.grip(arm);
+            WeaponArmRig rig = ((WeaponArmRig.Access) model).tennory$weaponArmRig();
+            WeaponArmRig.Grip grip = rig == null ? null : rig.grip(arm);
             if (grip != null) {
                 poses.pushPose();
                 Vector3f anchor = grip.position();
@@ -193,17 +193,13 @@ public final class VolleyAnimations {
     public static boolean usesFanGuard(AbstractClientPlayer player) {
         return player.getMainHandItem().getItem() instanceof FanItem
                 && !(player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof ArmorItem)
-                && canPose(player);
+                && WeaponPlayerPose.canPose(player);
     }
 
-    private static boolean canPose(AbstractClientPlayer player) {
-        return !player.isFallFlying() && !player.isVisuallySwimming() && !player.isSleeping() && !NinjasAnimationCompat.ownsPose();
-    }
-
-    public static BaseOffsets poseModel(PlayerModel<?> model, AbstractClientPlayer player, float walk, FanGuardRig rig) {
+    public static BaseOffsets poseModel(PlayerModel<?> model, AbstractClientPlayer player, float walk, WeaponArmRig rig) {
         var held = player.getMainHandItem().getItem();
         boolean fan = held instanceof FanItem;
-        if (!fan && !(held instanceof GunbladeItem) || !canPose(player)) {
+        if (!fan && !(held instanceof GunbladeItem) || !WeaponPlayerPose.canPose(player)) {
             return null;
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
@@ -214,13 +210,13 @@ public final class VolleyAnimations {
         if (gun.aim() <= 0.0F) {
             return null;
         }
-        BaseOffsets offsets = applyStance(model, VolleyMotion.gunStance(player.getMainArm(), gun.aim(), gun.recoil()), walk);
+        BaseOffsets offsets = WeaponPlayerPose.applyStance(model, VolleyMotion.gunStance(player.getMainArm(), gun.aim(), gun.recoil()), walk);
         boolean right = player.getMainArm() == HumanoidArm.RIGHT;
         poseGunArm(model, right ? model.rightArm : model.leftArm, player.getMainArm(), gun, true);
         if (player.getOffhandItem().isEmpty()) {
             poseGunArm(model, right ? model.leftArm : model.rightArm, player.getMainArm().getOpposite(), gun, false);
         }
-        copyWear(model);
+        WeaponPlayerPose.copyWear(model);
         return offsets;
     }
 
@@ -235,12 +231,12 @@ public final class VolleyAnimations {
         return frame != null && frame.profile() == VolleyProfile.QUASSUS ? frame : null;
     }
 
-    private static BaseOffsets poseFan(PlayerModel<?> model, AbstractClientPlayer player, float walk, FanGuardRig rig,
+    private static BaseOffsets poseFan(PlayerModel<?> model, AbstractClientPlayer player, float walk, WeaponArmRig rig,
                                        float partialTick) {
         var frame = fanMotion(player, partialTick);
         var motion = FAN_GUARD_MOTIONS.computeIfAbsent(player, key -> new FanGuardMotion());
         var pose = motion.sample(frame, player.level().getGameTime() + (double) partialTick);
-        BaseOffsets offsets = pose.inGuard() ? null : applyStance(model, pose.stance(), walk);
+        BaseOffsets offsets = pose.inGuard() ? null : WeaponPlayerPose.applyStance(model, pose.stance(), walk);
         if (rig == null) {
             if (frame != null) {
                 poseFanArm(model.rightArm, HumanoidArm.RIGHT, frame.fanHand(HumanoidArm.RIGHT), pose.stance());
@@ -255,7 +251,7 @@ public final class VolleyAnimations {
                 }
             }
         }
-        copyWear(model);
+        WeaponPlayerPose.copyWear(model);
         if (rig != null) {
             for (HumanoidArm arm : HumanoidArm.values()) {
                 if (holdsFan(player, arm)) {
@@ -279,48 +275,7 @@ public final class VolleyAnimations {
                 ((arm == HumanoidArm.LEFT ? 90.0F : 174.0F) - side * move.roll() * 0.62F) * DEG);
     }
 
-    private static BaseOffsets applyStance(PlayerModel<?> model, VolleyMotion.Stance stance, float walk) {
-        if (model.riding) {
-            return null;
-        }
-        BaseOffsets offsets = new BaseOffsets(model);
-        float footWeight = 1.0F - 0.69F * Mth.clamp(walk, 0.0F, 1.0F);
-        float yaw = stance.yaw() * DEG;
-        float pitch = stance.pitch() * DEG;
-        float roll = stance.roll() * DEG;
-        Quaternionf turn = new Quaternionf().rotationZYX(roll, yaw, pitch);
-        float hipY = (model.rightLeg.y + model.leftLeg.y) * 0.5F;
-        offsetAtHips(model.body, turn, hipY, stance);
-        offsetAtHips(model.head, turn, hipY, stance);
-        offsetAtHips(model.rightArm, turn, hipY, stance);
-        offsetAtHips(model.leftArm, turn, hipY, stance);
-        model.body.xRot += pitch;
-        model.body.yRot += yaw;
-        model.body.zRot += roll;
-        model.head.zRot += roll * 0.23F;
-        braceLeg(model.rightLeg, 1.0F, stance, footWeight);
-        braceLeg(model.leftLeg, -1.0F, stance, footWeight);
-        return offsets;
-    }
-
-    private static void offsetAtHips(ModelPart part, Quaternionf turn, float hipY, VolleyMotion.Stance stance) {
-        Vector3f origin = new Vector3f(part.x, part.y - hipY, part.z);
-        turn.transform(origin);
-        part.setPos(origin.x + stance.lean(), origin.y + hipY + stance.drop(), origin.z + stance.fore());
-    }
-
-    private static void braceLeg(ModelPart leg, float side, VolleyMotion.Stance stance, float weight) {
-        float lead = side * stance.stride() * weight;
-        float spread = weight * (Math.abs(stance.stride()) * 0.46F + stance.drop() * 0.026F);
-        leg.xRot += lead;
-        leg.yRot += weight * stance.yaw() * DEG * 0.41F - side * spread;
-        leg.zRot += side * spread;
-        leg.x += stance.lean() * weight * 0.70F;
-        leg.z += weight * stance.fore() * 0.46F + lead * 1.6F;
-        leg.y += weight * stance.drop() * 0.31F;
-    }
-
-    private static void poseFanArm(ModelPart limb, HumanoidArm arm, VolleyMotion.FanHand grip, VolleyMotion.Stance stance) {
+    private static void poseFanArm(ModelPart limb, HumanoidArm arm, VolleyMotion.FanHand grip, Stance stance) {
         float side = viewSide(arm);
         limb.xRot += grip.armPitch() * DEG;
         limb.yRot += (stance.yaw() * 0.38F + side * grip.armYaw()) * DEG;
@@ -334,15 +289,6 @@ public final class VolleyAnimations {
         limb.xRot = Mth.lerp(aim, limb.xRot, (-79.0F - 4.0F * gun.recoil()) * DEG + model.head.xRot);
         limb.yRot = Mth.lerp(aim, limb.yRot, model.head.yRot - side * (shootingHand ? 12.0F : 29.0F) * DEG);
         limb.zRot = Mth.lerp(aim, limb.zRot, side * (shootingHand ? 5.0F : 17.0F) * DEG);
-    }
-
-    private static void copyWear(PlayerModel<?> model) {
-        model.hat.copyFrom(model.head);
-        model.jacket.copyFrom(model.body);
-        model.rightSleeve.copyFrom(model.rightArm);
-        model.leftSleeve.copyFrom(model.leftArm);
-        model.rightPants.copyFrom(model.rightLeg);
-        model.leftPants.copyFrom(model.leftLeg);
     }
 
     private static Quaternionf rotation(ModelPart part) {
@@ -359,42 +305,7 @@ public final class VolleyAnimations {
         Minecraft.getInstance().getItemRenderer().renderStatic(player, stack, ItemDisplayContext.NONE,
                 arm == HumanoidArm.LEFT, poses, buffers, player.level(), light, OverlayTexture.NO_OVERLAY, player.getId());
         if (flash > 0.0F) {
-            drawMuzzleFlash(poses.last(), buffers.getBuffer(RenderType.lightning()), flash);
-        }
-    }
-
-    private static void drawMuzzleFlash(PoseStack.Pose pose, VertexConsumer vertices, float amount) {
-        float radius = 0.13F * amount;
-        float tip = GUN_MUZZLE + 0.27F * amount;
-        float center = GUN_MUZZLE + 0.03F;
-        for (int face = 0; face < 4; face++) {
-            float angle = face * Mth.HALF_PI * 0.5F;
-            float x = Mth.cos(angle) * radius;
-            float z = Mth.sin(angle) * radius;
-            vertices.addVertex(pose, 0.0F, GUN_MUZZLE - 0.04F, 0.0F).setColor(0xFFFFE4A4);
-            vertices.addVertex(pose, x, center, z).setColor(0xEFFF9C43);
-            vertices.addVertex(pose, 0.0F, tip, 0.0F).setColor(0xFFFFF0CE);
-            vertices.addVertex(pose, -x, center, -z).setColor(0xEFFF9C43);
-        }
-    }
-
-    // Vanilla resets the remaining pose fields on every setupAnim call.
-    public record BaseOffsets(float bodyX, float bodyZ, float bodyRoll, float headX, float headZ, float headRoll,
-                              float rightHip, float leftHip) {
-        BaseOffsets(PlayerModel<?> model) {
-            this(model.body.x, model.body.z, model.body.zRot, model.head.x, model.head.z, model.head.zRot,
-                    model.rightLeg.x, model.leftLeg.x);
-        }
-
-        public void restore(PlayerModel<?> model) {
-            model.body.x = bodyX;
-            model.body.z = bodyZ;
-            model.body.zRot = bodyRoll;
-            model.head.x = headX;
-            model.head.z = headZ;
-            model.head.zRot = headRoll;
-            model.rightLeg.x = rightHip;
-            model.leftLeg.x = leftHip;
+            VolleyRenderer.renderMuzzleFlash(poses.last(), buffers, GUN_MUZZLE, flash);
         }
     }
 }

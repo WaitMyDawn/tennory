@@ -1,7 +1,5 @@
 package yagen.waitmydawn.tennory.glaive;
 
-import java.util.List;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -9,7 +7,6 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import yagen.waitmydawn.tennory.combat.WeaponStats;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
@@ -54,17 +51,11 @@ public abstract class GlaiveWeaponItem extends MeleeWeaponItem {
         return InteractionResultHolder.consume(stack);
     }
 
-    @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.tennory.glaive.mode", modeName(detonatesOnImpact(stack)))
-                .withStyle(ChatFormatting.GRAY));
-    }
-
     public static boolean detonatesOnImpact(ItemStack stack) {
         return stack.getOrDefault(TennoryRegistries.GLAIVE_VOLATILE.get(), false);
     }
 
-    private static Component modeName(boolean enabled) {
+    public static Component modeName(boolean enabled) {
         return Component.translatable(enabled ? "mode.tennory.glaive.volatile" : "mode.tennory.glaive.normal");
     }
 

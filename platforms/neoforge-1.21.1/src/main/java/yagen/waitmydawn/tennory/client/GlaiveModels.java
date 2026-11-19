@@ -23,6 +23,7 @@ import yagen.waitmydawn.tennory.glaive.GlaiveReadiness;
 
 @EventBusSubscriber(modid = Tennory.MODID, value = Dist.CLIENT)
 public final class GlaiveModels {
+    static final float WORLD_SCALE = 1.35F;
     private static final int DEPLOYMENT_STEPS = 8;
     private static final ModelResourceLocation ITEM = ModelResourceLocation.inventory(id("glaive"));
 
@@ -38,7 +39,7 @@ public final class GlaiveModels {
         Map<ModelResourceLocation, BakedModel> models = event.getModels();
         BakedModel original = models.get(ITEM);
         BakedModel[] frames = new BakedModel[DEPLOYMENT_STEPS + 1];
-        frames[0] = original;
+        frames[0] = new HeldFrame(original, null);
         for (int index = 1; index < DEPLOYMENT_STEPS; index++) {
             frames[index] = new HeldFrame(original, models.get(frameId(index)));
         }
@@ -53,6 +54,10 @@ public final class GlaiveModels {
 
     private static ModelResourceLocation frameId(int index) {
         return ModelResourceLocation.standalone(id("item/glaive_deploy_" + index));
+    }
+
+    static void scaleInWorld(PoseStack poses) {
+        poses.scale(WORLD_SCALE, WORLD_SCALE, WORLD_SCALE);
     }
 
     private static final class AnimatedItem extends BakedModelWrapper<BakedModel> {
@@ -82,9 +87,9 @@ public final class GlaiveModels {
     }
 
     private static final class HeldFrame extends BakedModelWrapper<BakedModel> {
-        private final BakedModel frame;
+        private final @Nullable BakedModel frame;
 
-        private HeldFrame(BakedModel original, BakedModel frame) {
+        private HeldFrame(BakedModel original, @Nullable BakedModel frame) {
             super(original);
             this.frame = frame;
         }
@@ -92,8 +97,12 @@ public final class GlaiveModels {
         @Override
         public BakedModel applyTransform(ItemDisplayContext context, PoseStack poseStack, boolean leftHand) {
             BakedModel transformed = originalModel.applyTransform(context, poseStack, leftHand);
+            if (context == ItemDisplayContext.THIRD_PERSON_LEFT_HAND || context == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND) {
+                scaleInWorld(poseStack);
+            }
             return switch (context) {
-                case FIRST_PERSON_LEFT_HAND, FIRST_PERSON_RIGHT_HAND, THIRD_PERSON_LEFT_HAND, THIRD_PERSON_RIGHT_HAND -> frame;
+                case FIRST_PERSON_LEFT_HAND, FIRST_PERSON_RIGHT_HAND, THIRD_PERSON_LEFT_HAND, THIRD_PERSON_RIGHT_HAND ->
+                        frame == null ? transformed : frame;
                 default -> transformed;
             };
         }

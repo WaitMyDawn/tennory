@@ -281,7 +281,7 @@ public final class GlaiveProjectile extends Projectile {
         if (end.distanceToSqr(catchPoint) <= CATCH_DISTANCE * CATCH_DISTANCE) {
             recover(owner);
         } else if (detonated) {
-            faceOwner(owner.getEyePosition().subtract(end));
+            bankTowardOwner(owner.getEyePosition().subtract(end));
         } else {
             entityData.set(FLIGHT_POSE, LEVEL_POSE);
         }
@@ -296,13 +296,12 @@ public final class GlaiveProjectile extends Projectile {
                 .rotateZ((-x * pitch + z * bank) * Mth.DEG_TO_RAD).rotateX(Mth.HALF_PI));
     }
 
-    private void faceOwner(Vec3 towardEye) {
-        // Local +Z is the blade face. Bank off the eye line while leaving most of the face visible.
+    private void bankTowardOwner(Vec3 towardEye) {
+        // Tilt local +Z (the face normal) in the look-at frame so it stays 45 degrees off the eye line at all yaws.
         float yaw = (float) Math.atan2(towardEye.x, towardEye.z);
         float pitch = (float) Math.atan2(-towardEye.y, towardEye.horizontalDistance());
-        float bank = (float) (10.0 + 24.0 * GlaiveRules.detonationReturnCurve(towardEye.length()));
         entityData.set(FLIGHT_POSE, new Quaternionf().rotationY(yaw).rotateX(pitch)
-                .rotateY(bank * Mth.DEG_TO_RAD).rotateX(8.0F * Mth.DEG_TO_RAD));
+                .rotateX(-Mth.PI / 4.0F));
     }
 
     private static float flightPitch(Vec3 heading) {
@@ -316,7 +315,7 @@ public final class GlaiveProjectile extends Projectile {
         detonated = true;
         returning = true;
         Vec3 center = position();
-        faceOwner(owner.getEyePosition().subtract(center));
+        bankTowardOwner(owner.getEyePosition().subtract(center));
         double radius = GlaiveRules.BLAST_RADIUS;
         DamageSource source = damageSources().explosion(this, owner);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(center, center).inflate(radius + SURFACE_OFFSET),

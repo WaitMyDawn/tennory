@@ -13,7 +13,7 @@ import org.joml.Matrix3f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-public final class FanGuardRig {
+public final class WeaponArmRig {
     private static final float ELBOW = 4.0F;
     private static final Set<Direction> SIDES = EnumSet.of(Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST);
     private static final Set<Direction> UPPER_FACES = EnumSet.of(Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST);
@@ -21,15 +21,15 @@ public final class FanGuardRig {
     private final Arm left;
     private final Arm right;
 
-    public FanGuardRig(boolean slim) {
+    public WeaponArmRig(boolean slim) {
         left = new Arm(false, slim);
         right = new Arm(true, slim);
     }
 
-    void prepare(PlayerModel<?> model, HumanoidArm hand, ArmPose pose, float meleeBlend, Quaternionf meleeWrist) {
+    void prepare(PlayerModel<?> model, HumanoidArm hand, ArmPose pose, float vanillaBlend, Quaternionf vanillaGrip) {
         boolean leftHand = hand == HumanoidArm.LEFT;
         arm(hand).prepare(leftHand ? model.leftArm : model.rightArm, leftHand ? model.leftSleeve : model.rightSleeve,
-                pose, meleeBlend, meleeWrist);
+                pose, vanillaBlend, vanillaGrip);
     }
 
     Grip grip(HumanoidArm hand) {
@@ -78,38 +78,47 @@ public final class FanGuardRig {
         return new Quaternionf().setFromNormalized(new Matrix3f().setColumn(0, x).setColumn(1, y).setColumn(2, z));
     }
 
-    private static void setRotation(ModelPart part, Quaternionf rotation) {
+    static void setRotation(ModelPart part, Quaternionf rotation) {
         Vector3f euler = rotation.getEulerAnglesZYX(new Vector3f());
         part.setRotation(euler.x, euler.y, euler.z);
     }
 
     public interface Access {
-        void tennory$finishVolleyPose();
+        void tennory$finishWeaponPose();
 
-        FanGuardRig tennory$fanGuardRig();
+        WeaponArmRig tennory$weaponArmRig();
     }
 
     record Grip(Vector3f position, Quaternionf rotation) {
     }
 
-    record ArmPose(Quaternionf upper, Quaternionf forearm, Quaternionf fan) {
+    record ArmPose(Quaternionf upper, Quaternionf forearm, Quaternionf grip) {
         static ArmPose facing(Vector3f upper, Vector3f forearm, Vector3f spread, Vector3f normal) {
             return new ArmPose(alongArm(upper.x, upper.y, upper.z), alongArm(forearm.x, forearm.y, forearm.z),
                     face(spread, normal));
         }
 
+        static ArmPose hinged(Vector3f upper, Vector3f forearm, Vector3f spread, Vector3f normal) {
+            Vector3f upperAxis = upper.normalize();
+            Vector3f forearmAxis = forearm.normalize();
+            Quaternionf shoulder = alongArm(upperAxis.x, upperAxis.y, upperAxis.z);
+            // Transport the shoulder rotation through the elbow bend so the forearm inherits its twist.
+            Quaternionf wrist = new Quaternionf().rotationTo(upperAxis, forearmAxis).mul(shoulder);
+            return new ArmPose(shoulder, wrist, face(spread, normal));
+        }
+
         ArmPose lerp(ArmPose target, float blend) {
             return new ArmPose(new Quaternionf(upper).slerp(target.upper, blend),
                     new Quaternionf(forearm).slerp(target.forearm, blend),
-                    new Quaternionf(fan).slerp(target.fan, blend));
+                    new Quaternionf(grip).slerp(target.grip, blend));
         }
 
-        ArmPose rollFan(float radians) {
-            return new ArmPose(upper, forearm, new Quaternionf(fan).rotateZ(radians));
+        ArmPose rollGrip(float radians) {
+            return new ArmPose(upper, forearm, new Quaternionf(grip).rotateZ(radians));
         }
 
         ArmPose mirror() {
-            return new ArmPose(mirrorRotation(upper), mirrorRotation(forearm), mirrorRotation(fan));
+            return new ArmPose(mirrorRotation(upper), mirrorRotation(forearm), mirrorRotation(grip));
         }
 
         private static Quaternionf mirrorRotation(Quaternionf rotation) {
@@ -131,10 +140,10 @@ public final class FanGuardRig {
             sleeve = Segments.bake(right ? 40 : 48, right ? 32 : 48, leftEdge, width, 0.25F);
         }
 
-        void prepare(ModelPart base, ModelPart baseSleeve, ArmPose pose, float meleeBlend, Quaternionf meleeWrist) {
+        void prepare(ModelPart base, ModelPart baseSleeve, ArmPose pose, float vanillaBlend, Quaternionf vanillaGrip) {
             Quaternionf straight = new Quaternionf().rotationZYX(base.zRot, base.yRot, base.xRot);
-            Quaternionf upper = new Quaternionf(pose.upper()).slerp(straight, meleeBlend);
-            Quaternionf fore = new Quaternionf(pose.forearm()).slerp(straight, meleeBlend);
+            Quaternionf upper = new Quaternionf(pose.upper()).slerp(straight, vanillaBlend);
+            Quaternionf fore = new Quaternionf(pose.forearm()).slerp(straight, vanillaBlend);
             Quaternionf elbow = new Quaternionf(upper).invert().mul(fore);
             skin.pose(base, upper, elbow);
             sleeve.pose(baseSleeve, upper, elbow);
@@ -142,7 +151,7 @@ public final class FanGuardRig {
             Vector3f hand = upper.transform(new Vector3f(0.0F, ELBOW, 0.0F));
             hand.add(fore.transform(new Vector3f(center, 6.0F, -1.45F)));
             hand.add(base.x, base.y, base.z).mul(1.0F / 16.0F);
-            grip = new Grip(hand, new Quaternionf(pose.fan()).slerp(meleeWrist, meleeBlend));
+            grip = new Grip(hand, new Quaternionf(pose.grip()).slerp(vanillaGrip, vanillaBlend));
         }
     }
 

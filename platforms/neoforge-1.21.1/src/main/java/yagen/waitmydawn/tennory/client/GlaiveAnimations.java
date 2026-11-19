@@ -2,80 +2,70 @@ package yagen.waitmydawn.tennory.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import java.lang.ref.WeakReference;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.asm.enumextension.EnumProxy;
-import net.neoforged.neoforge.client.IArmPoseTransformer;
 import net.neoforged.neoforge.client.event.RenderHandEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import yagen.waitmydawn.tennory.Tennory;
+import yagen.waitmydawn.tennory.client.WeaponArmRig.ArmPose;
+import yagen.waitmydawn.tennory.client.WeaponPlayerPose.BaseOffsets;
+import yagen.waitmydawn.tennory.client.WeaponPlayerPose.Stance;
 import yagen.waitmydawn.tennory.glaive.GlaiveReadiness;
 import yagen.waitmydawn.tennory.glaive.GlaiveWeaponItem;
+import yagen.waitmydawn.tennory.registries.TennoryRegistries;
 
 @EventBusSubscriber(modid = Tennory.MODID, value = Dist.CLIENT)
 public final class GlaiveAnimations implements IClientItemExtensions {
-    public static final EnumProxy<HumanoidModel.ArmPose> CHARGE_POSE = new EnumProxy<>(HumanoidModel.ArmPose.class,
-            false, (IArmPoseTransformer) GlaiveAnimations::poseChargeArm);
-    private static final float THROW_TICKS = 6.0F;
-
-    private static WeakReference<LocalPlayer> throwingPlayer = new WeakReference<>(null);
-    private static int throwTick;
-
-    @Override
-    public HumanoidModel.ArmPose getArmPose(LivingEntity entity, InteractionHand hand, ItemStack stack) {
-        return hand == InteractionHand.MAIN_HAND && isCharging(entity, stack) ? CHARGE_POSE.getValue() : null;
-    }
+    private static final Stance WINDUP = new Stance(24.0F, -4.0F, -3.0F, -0.45F, 1.05F, 0.75F, 0.23F);
+    private static final Stance FOLLOW_THROUGH = new Stance(-32.0F, 9.0F, 5.0F, 0.45F, 0.95F, -1.10F, -0.23F);
+    private static final ArmPose THROWING_DRAW = ArmPose.hinged(
+            new Vector3f(-0.32F, 0.76F, 0.56F), new Vector3f(-0.48F, 0.52F, 0.71F),
+            new Vector3f(0.0F, -0.92F, 0.39F), new Vector3f(-0.94F, 0.12F, -0.30F));
+    private static final ArmPose GUARD_DRAW = ArmPose.hinged(
+            new Vector3f(0.24F, 0.18F, -0.95F), new Vector3f(-0.88F, 0.045F, -0.47F),
+            new Vector3f(0.0F, 1.0F, 0.0F), new Vector3f(0.0F, 0.0F, 1.0F));
+    private static final ArmPose THROWING_CAST = ArmPose.hinged(
+            new Vector3f(-0.24F, 0.26F, -0.93F), new Vector3f(0.18F, 0.12F, -0.98F),
+            new Vector3f(-0.35F, -0.88F, -0.25F), new Vector3f(-0.78F, 0.28F, 0.59F));
+    private static final ArmPose GUARD_CAST = ArmPose.hinged(
+            new Vector3f(0.26F, 0.34F, -0.90F), new Vector3f(-0.89F, 0.12F, -0.44F),
+            new Vector3f(0.0F, 1.0F, 0.0F), new Vector3f(0.0F, 0.0F, 1.0F));
 
     @Override
     public boolean applyForgeHandTransform(PoseStack pose, LocalPlayer player, HumanoidArm arm, ItemStack stack,
                                            float partialTick, float equip, float swing) {
-        if (arm != player.getMainArm()) {
+        if (arm != player.getMainArm()
+                || (GlaiveReadiness.deployment(player, partialTick) >= 1.0F && equip <= 0.30F || swing > 0.0F)) {
             return false;
         }
-        boolean charging = isCharging(player, stack);
-        float release = throwProgress(player, partialTick);
-        float deployment = GlaiveReadiness.deployment(player, partialTick);
-        if (!charging && release >= 1.0F && (deployment >= 1.0F && equip <= 0.30F || swing > 0.0F)) {
-            return false;
-        }
-
-        float draw = charging ? chargeProgress(player, stack, partialTick) : 0.0F;
-        poseWeapon(pose, arm, equip, draw, release);
+        poseWeapon(pose, arm, equip, 0.0F, 0.0F);
         return true;
-    }
-
-    private static void poseWeapon(PoseStack pose, HumanoidArm arm, float equip, float draw, float release) {
-        float side = arm == HumanoidArm.RIGHT ? 1.0F : -1.0F;
-        float flick = Mth.sin(release * Mth.PI);
-        pose.translate(side * (0.56F - 0.08F * draw - 0.32F * flick),
-                -0.52F - 0.20F * equip + 0.16F * draw + 0.12F * flick, -0.72F + 0.12F * draw - 0.30F * flick);
-        pose.mulPose(Axis.YP.rotationDegrees(side * (31.0F * draw - 46.0F * flick)));
-        pose.mulPose(Axis.XP.rotationDegrees(-17.0F * draw + 32.0F * flick));
-        pose.mulPose(Axis.ZP.rotationDegrees(side * (-38.0F * draw + 24.0F * flick)));
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRelease(LivingEntityUseItemEvent.Stop event) {
         if (event.getEntity() instanceof LocalPlayer player && event.getItem().getItem() instanceof GlaiveWeaponItem weapon
                 && weapon.getUseDuration(event.getItem(), player) - event.getDuration() >= weapon.chargeTicks()) {
-            throwingPlayer = new WeakReference<>(player);
-            throwTick = player.tickCount;
+            player.setData(TennoryRegistries.CLIENT_GLAIVE_THROW_TICK, player.level().getGameTime());
         }
     }
 
@@ -86,71 +76,103 @@ public final class GlaiveAnimations implements IClientItemExtensions {
         if (player == null || event.getHand() != InteractionHand.MAIN_HAND) {
             return;
         }
-
         ItemStack held = player.getMainHandItem();
-        HumanoidArm arm = player.getMainArm();
-        boolean right = arm == HumanoidArm.RIGHT;
-        PoseStack pose = event.getPoseStack();
-        // The vanilla hand renderer can keep the previous stack until its lowering animation finishes.
-        if (held.getItem() instanceof GlaiveWeaponItem && held != event.getItemStack()) {
-            pose.pushPose();
-            poseWeapon(pose, arm, 0.5F, 0.0F, 1.0F);
-            ItemDisplayContext view = right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
-            client.getItemRenderer().renderStatic(player, held, view, !right, pose, event.getMultiBufferSource(),
-                    player.level(), event.getPackedLight(), OverlayTexture.NO_OVERLAY, player.getId());
-            pose.popPose();
+        GlaiveMotion motion = GlaiveMotion.sample(player, event.getPartialTick());
+        if (held.isEmpty() && (motion != null
+                || player.getExistingDataOrNull(TennoryRegistries.CLIENT_GLAIVE_IN_FLIGHT) == Boolean.TRUE)) {
             event.setCanceled(true);
             return;
         }
-
-        float progress = throwProgress(player, event.getPartialTick());
-        if (progress >= 1.0F || player.isInvisible() || !held.isEmpty()) {
+        // After a catch, the vanilla hand renderer can retain its previous stack until its equip transition finishes.
+        if (!(held.getItem() instanceof GlaiveWeaponItem) || motion == null && held == event.getItemStack()) {
             return;
         }
-
-        float flick = Mth.sin(progress * Mth.PI);
-        float side = right ? 1.0F : -1.0F;
+        HumanoidArm arm = player.getMainArm();
+        boolean right = arm == HumanoidArm.RIGHT;
+        PoseStack pose = event.getPoseStack();
         pose.pushPose();
-        pose.translate(side * (0.64F - 0.34F * flick), -0.60F + 0.20F * flick, -0.72F - 0.32F * flick);
-        pose.mulPose(Axis.YP.rotationDegrees(side * (45.0F + 52.0F * flick)));
-        pose.translate(-side, 3.6F, 3.5F);
-        pose.mulPose(Axis.ZP.rotationDegrees(side * (120.0F - 20.0F * flick)));
-        pose.mulPose(Axis.XP.rotationDegrees(200.0F + 18.0F * flick));
-        pose.mulPose(Axis.YP.rotationDegrees(-135.0F * side));
-        pose.translate(5.6F * side, 0.0F, 0.0F);
-        PlayerRenderer renderer = (PlayerRenderer) client.getEntityRenderDispatcher().getRenderer(player);
-        if (right) {
-            renderer.renderRightHand(pose, event.getMultiBufferSource(), event.getPackedLight(), player);
-        } else {
-            renderer.renderLeftHand(pose, event.getMultiBufferSource(), event.getPackedLight(), player);
-        }
+        poseWeapon(pose, arm, motion == null ? 0.5F : 0.0F,
+                motion == null ? 0.0F : motion.draw(), motion == null ? 0.0F : motion.cast());
+        ItemDisplayContext view = right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
+        client.getItemRenderer().renderStatic(player, held, view, !right, pose, event.getMultiBufferSource(),
+                player.level(), event.getPackedLight(), OverlayTexture.NO_OVERLAY, player.getId());
         pose.popPose();
         event.setCanceled(true);
     }
 
-    private static void poseChargeArm(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
-        ModelPart part = arm == HumanoidArm.RIGHT ? model.rightArm : model.leftArm;
-        float partial = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
-        float draw = chargeProgress(entity, entity.getUseItem(), partial);
+    private static void poseWeapon(PoseStack pose, HumanoidArm arm, float equip, float draw, float cast) {
         float side = arm == HumanoidArm.RIGHT ? 1.0F : -1.0F;
-        part.xRot = -0.42F + 1.22F * draw;
-        part.yRot = side * (-0.30F - 0.52F * draw);
-        part.zRot = side * (0.14F + 0.67F * draw);
+        pose.translate(side * (0.56F + 0.09F * draw - 0.31F * cast), -0.52F - 0.20F * equip - 0.13F * draw + 0.16F * cast,
+                -0.72F + 0.15F * draw - 0.35F * cast);
+        pose.mulPose(Axis.YP.rotationDegrees(side * (24.0F * draw - 45.0F * cast)));
+        pose.mulPose(Axis.XP.rotationDegrees(-17.0F * draw + 23.0F * cast));
+        pose.mulPose(Axis.ZP.rotationDegrees(side * (-35.0F * draw + 24.0F * cast)));
     }
 
-    private static boolean isCharging(LivingEntity entity, ItemStack stack) {
-        return entity.isUsingItem() && entity.getUsedItemHand() == InteractionHand.MAIN_HAND && entity.getUseItem().is(stack.getItem());
+    public static boolean usesArmRig(AbstractClientPlayer player) {
+        return !player.isPassenger() && sample(player) != null && WeaponPlayerPose.canPose(player)
+                && !(player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof ArmorItem);
     }
 
-    private static float chargeProgress(LivingEntity entity, ItemStack stack, float partialTick) {
-        if (stack.getItem() instanceof GlaiveWeaponItem weapon) {
-            float fraction = Mth.clamp((entity.getTicksUsingItem() + partialTick) / Math.max(1, weapon.chargeTicks()), 0.0F, 1.0F);
-            return fraction * fraction * (3.0F - 2.0F * fraction);
+    public static BaseOffsets poseModel(PlayerModel<?> model, AbstractClientPlayer player, float walk, WeaponArmRig rig) {
+        GlaiveMotion motion = sample(player);
+        if (motion == null || motion.weight() <= 0.001F || model.riding || !WeaponPlayerPose.canPose(player)) {
+            return null;
         }
-        return 0.0F;
+        HumanoidArm main = player.getMainArm();
+        float side = main == HumanoidArm.RIGHT ? 1.0F : -1.0F;
+        float phase = motion.cast() / motion.weight();
+        Stance stance = Stance.REST.lerp(WINDUP.lerp(FOLLOW_THROUGH, phase).mirror(side), motion.weight());
+        BaseOffsets offsets = WeaponPlayerPose.applyStance(model, stance, walk);
+        ArmPose throwing = THROWING_DRAW.lerp(THROWING_CAST, phase);
+        ArmPose guard = GUARD_DRAW.lerp(GUARD_CAST, phase);
+        float vanillaBlend = 1.0F - motion.weight();
+        poseArm(model, rig, main, side > 0.0F ? throwing : throwing.mirror(), vanillaBlend);
+        poseArm(model, player.getOffhandItem().isEmpty() ? rig : null, main.getOpposite(),
+                side > 0.0F ? guard : guard.mirror(), vanillaBlend);
+        WeaponPlayerPose.copyWear(model);
+        return offsets;
     }
 
-    private static float throwProgress(LocalPlayer player, float partialTick) {
-        return player == throwingPlayer.get() ? Mth.clamp((player.tickCount - throwTick + partialTick) / THROW_TICKS, 0.0F, 1.0F) : 1.0F;
+    private static void poseArm(PlayerModel<?> model, WeaponArmRig rig, HumanoidArm hand, ArmPose pose, float vanillaBlend) {
+        boolean right = hand == HumanoidArm.RIGHT;
+        ModelPart limb = right ? model.rightArm : model.leftArm;
+        Quaternionf idle = new Quaternionf().rotationZYX(limb.zRot, limb.yRot, limb.xRot);
+        if (rig != null) {
+            float side = right ? 1.0F : -1.0F;
+            Quaternionf grip = idle.rotateX(-Mth.HALF_PI).rotateY(Mth.PI - side * Mth.HALF_PI)
+                    .rotateZ(-side * 32.0F * Mth.DEG_TO_RAD);
+            rig.prepare(model, hand, pose, vanillaBlend, grip);
+        } else {
+            Quaternionf arm = new Quaternionf(pose.upper()).slerp(pose.forearm(), 0.38F).slerp(idle, vanillaBlend);
+            WeaponArmRig.setRotation(limb, arm);
+        }
+    }
+
+    public static boolean renderHeld(PlayerModel<?> model, AbstractClientPlayer player, ItemStack stack, HumanoidArm arm,
+                                     PoseStack pose, MultiBufferSource buffers, int light) {
+        if (!(stack.getItem() instanceof GlaiveWeaponItem) || arm != player.getMainArm()) {
+            return false;
+        }
+        WeaponArmRig rig = ((WeaponArmRig.Access) model).tennory$weaponArmRig();
+        WeaponArmRig.Grip grip = rig == null ? null : rig.grip(arm);
+        if (grip == null) {
+            return false;
+        }
+        Vector3f anchor = grip.position();
+        pose.pushPose();
+        pose.translate(anchor.x, anchor.y, anchor.z);
+        pose.mulPose(grip.rotation());
+        // The disc's center is below the grip inset; move the inner face clear of the forearm.
+        pose.translate(0.0F, -0.065F, 0.075F);
+        GlaiveModels.scaleInWorld(pose);
+        Minecraft.getInstance().getItemRenderer().renderStatic(player, stack, ItemDisplayContext.NONE,
+                arm == HumanoidArm.LEFT, pose, buffers, player.level(), light, OverlayTexture.NO_OVERLAY, player.getId());
+        pose.popPose();
+        return true;
+    }
+
+    private static GlaiveMotion sample(AbstractClientPlayer player) {
+        return GlaiveMotion.sample(player, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
     }
 }
