@@ -12,20 +12,25 @@ import yagen.waitmydawn.tennory.registries.TennoryRegistries;
 @EventBusSubscriber(modid = Tennory.MODID)
 public final class GlaiveReadiness {
     private Item equipped;
-    private int slot;
-    private boolean drawn;
+    private int slot = -1;
+    private boolean drawn = true;
+    private boolean animateDeployment;
 
     public static float deployment(Player player, float partialTick) {
         GlaiveReadiness state = player.getExistingDataOrNull(TennoryRegistries.GLAIVE_READINESS);
-        if (state == null || !state.matches(player)) {
+        Item held = player.getMainHandItem().getItem();
+        if (state == null || state.slot < 0 || !(held instanceof GlaiveWeaponItem)) {
+            return 1.0F;
+        }
+        if (state.slot != player.getInventory().selected) {
             return 0.0F;
         }
-        return state.drawn ? 1.0F : Math.min(player.getAttackStrengthScale(partialTick), Math.nextDown(1.0F));
+        return state.animateDeployment && !state.drawn && state.equipped == held
+                ? Math.min(player.getAttackStrengthScale(partialTick), Math.nextDown(1.0F)) : 1.0F;
     }
 
-    static boolean ready(Player player) {
-        trackHand(player);
-        return deployment(player, 0.0F) >= 1.0F;
+    public static boolean ready(Player player) {
+        return trackHand(player).drawn;
     }
 
     @SubscribeEvent
@@ -41,29 +46,25 @@ public final class GlaiveReadiness {
         }
     }
 
-    private static void trackHand(Player player) {
-        Item item = player.getMainHandItem().getItem();
-        if (!(item instanceof GlaiveWeaponItem)) {
-            if (player.hasData(TennoryRegistries.GLAIVE_READINESS)) {
-                player.removeData(TennoryRegistries.GLAIVE_READINESS);
-            }
-            return;
-        }
-
+    private static GlaiveReadiness trackHand(Player player) {
+        Item held = player.getMainHandItem().getItem();
+        Item glaive = held instanceof GlaiveWeaponItem ? held : null;
+        int selected = player.getInventory().selected;
         GlaiveReadiness state = player.getData(TennoryRegistries.GLAIVE_READINESS);
-        if (!state.matches(player)) {
-            state.equipped = item;
-            state.slot = player.getInventory().selected;
-            state.drawn = false;
-            player.resetAttackStrengthTicker();
+        if (state.slot != selected || state.equipped != glaive) {
+            // Keep the last slot through an empty hand so an item delivered into that slot cannot trigger deployment.
+            state.animateDeployment = glaive != null && state.slot >= 0 && state.slot != selected;
+            state.slot = selected;
+            state.equipped = glaive;
+            state.drawn = glaive == null;
+            if (!state.drawn) {
+                player.resetAttackStrengthTicker();
+            }
         }
-        // The cooldown controls deployment once per equip. Subsequent swings must not retract the blades.
+        // Latch readiness through later swings and charge actions on the same weapon.
         if (!state.drawn && player.getAttackStrengthScale(0.0F) >= 1.0F) {
             state.drawn = true;
         }
-    }
-
-    private boolean matches(Player player) {
-        return equipped == player.getMainHandItem().getItem() && slot == player.getInventory().selected;
+        return state;
     }
 }

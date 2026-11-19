@@ -16,10 +16,16 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import yagen.waitmydawn.tennory.Tennory;
+import yagen.waitmydawn.tennory.combat.Chambers;
 import yagen.waitmydawn.tennory.glaive.GlaiveFlightItem;
 import yagen.waitmydawn.tennory.glaive.GlaiveItem;
 import yagen.waitmydawn.tennory.glaive.GlaiveProjectile;
 import yagen.waitmydawn.tennory.glaive.GlaiveReadiness;
+import yagen.waitmydawn.tennory.network.WeaponPayloads;
+import yagen.waitmydawn.tennory.weapon.QuassusItem;
+import yagen.waitmydawn.tennory.weapon.RedeemerItem;
+import yagen.waitmydawn.tennory.weapon.VolleyProjectile;
+import yagen.waitmydawn.tennory.weapon.VolleyWeaponItem;
 
 public final class TennoryRegistries {
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Tennory.MODID);
@@ -33,6 +39,11 @@ public final class TennoryRegistries {
             DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, Tennory.MODID);
 
     public static final DeferredItem<GlaiveItem> GLAIVE = ITEMS.registerItem("glaive", GlaiveItem::new);
+    public static final DeferredItem<RedeemerItem> REDEEMER = ITEMS.registerItem("redeemer", RedeemerItem::new);
+    public static final DeferredItem<QuassusItem> QUASSUS = ITEMS.registerItem("quassus", QuassusItem::new);
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Chambers>> VOLLEY_CHAMBERS =
+            COMPONENTS.register("volley_chambers", () -> DataComponentType.<Chambers>builder()
+                    .persistent(VolleyWeaponItem.CHAMBERS_CODEC).build());
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> GLAIVE_VOLATILE =
             COMPONENTS.register("glaive_volatile", () -> DataComponentType.<Boolean>builder()
                     .persistent(Codec.BOOL).networkSynchronized(ByteBufCodecs.BOOL).build());
@@ -45,6 +56,14 @@ public final class TennoryRegistries {
                     .clientTrackingRange(6)
                     .updateInterval(1)
                     .build(Tennory.MODID + ":glaive"));
+    public static final DeferredHolder<EntityType<?>, EntityType<VolleyProjectile>> VOLLEY_PROJECTILE =
+            ENTITIES.register("weapon_volley", () -> EntityType.Builder.of(VolleyProjectile::new, MobCategory.MISC)
+                    .sized(0.1F, 0.1F)
+                    .noSave()
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(1)
+                    .build(Tennory.MODID + ":weapon_volley"));
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<GlaiveFlightItem>> STORED_GLAIVE =
             ATTACHMENTS.register("stored_glaive", () -> AttachmentType.builder(() -> GlaiveFlightItem.EMPTY)
@@ -55,6 +74,8 @@ public final class TennoryRegistries {
             ATTACHMENTS.register("client_glaive_in_flight", () -> AttachmentType.builder(() -> false).build());
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<GlaiveReadiness>> GLAIVE_READINESS =
             ATTACHMENTS.register("glaive_readiness", () -> AttachmentType.builder(GlaiveReadiness::new).build());
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<WeaponPayloads.VolleyGesture>> VOLLEY_GESTURE =
+            ATTACHMENTS.register("volley_gesture", () -> AttachmentType.builder(() -> WeaponPayloads.VolleyGesture.INACTIVE).build());
 
     private TennoryRegistries() {
     }
@@ -63,7 +84,11 @@ public final class TennoryRegistries {
         TABS.register("items", () -> CreativeModeTab.builder()
                 .title(Component.translatable("creativetab.tennory.items"))
                 .icon(() -> new ItemStack(GLAIVE.get()))
-                .displayItems((parameters, output) -> output.accept(GLAIVE.get()))
+                .displayItems((parameters, output) -> {
+                    output.accept(GLAIVE.get());
+                    output.accept(REDEEMER.get());
+                    output.accept(QUASSUS.get());
+                })
                 .build());
         ITEMS.register(modBus);
         ENTITIES.register(modBus);

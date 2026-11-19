@@ -70,7 +70,7 @@ public final class GlaiveModels {
                         return frames[index];
                     }
                     BakedModel override = original.getOverrides().resolve(original, stack, level, entity, seed);
-                    return override == null ? original : override;
+                    return override == null || override == original ? frames[DEPLOYMENT_STEPS] : override;
                 }
             };
         }

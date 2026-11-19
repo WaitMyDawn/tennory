@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.HitResult;
@@ -19,19 +20,34 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.joml.Vector3f;
 import yagen.waitmydawn.tennory.Tennory;
 import yagen.waitmydawn.tennory.combat.GlaiveRules;
+import yagen.waitmydawn.tennory.combat.VolleyProfile;
 import yagen.waitmydawn.tennory.config.ClientConfigs;
 import yagen.waitmydawn.tennory.glaive.GlaiveFlights;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
+import yagen.waitmydawn.tennory.weapon.VolleyWeaponItem;
 
 public final class WeaponPayloads {
     private WeaponPayloads() {
     }
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar("4")
+        event.registrar("5")
                 .playToServer(SpecialAction.TYPE, StreamCodec.unit(SpecialAction.INSTANCE), (payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
+                    if (!(context.player() instanceof ServerPlayer player) || !player.isAlive() || player.isSpectator()) {
+                        return;
+                    }
+                    if (GlaiveFlights.hasActiveProjectile(player)) {
                         GlaiveFlights.activateSpecial(player);
+                    } else {
+                        ItemStack stack = player.getMainHandItem();
+                        if (stack.getItem() instanceof VolleyWeaponItem weapon) {
+                            weapon.fireSpecial(player, stack);
+                        }
+                    }
+                })
+                .playToClient(VolleyGesture.TYPE, VolleyGesture.STREAM_CODEC, (payload, context) -> {
+                    if (context.player().level().getEntity(payload.playerId()) instanceof Player player) {
+                        player.setData(TennoryRegistries.VOLLEY_GESTURE, payload);
                     }
                 })
                 .playToClient(GlaiveFlightState.TYPE, GlaiveFlightState.STREAM_CODEC,
@@ -48,6 +64,26 @@ public final class WeaponPayloads {
     public static void sendGlaiveBurst(ServerLevel level, Vec3 center) {
         PacketDistributor.sendToPlayersNear(level, null, center.x, center.y, center.z, 32.0,
                 new GlaiveBurst(center.x, center.y, center.z));
+    }
+
+    public static void sendVolleyGesture(ServerPlayer player, VolleyProfile profile, int chamber) {
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(player,
+                new VolleyGesture(player.getId(), profile.ordinal(), chamber, player.level().getGameTime()));
+    }
+
+    public record VolleyGesture(int playerId, int profileId, int chamber, long startTick) implements CustomPacketPayload {
+        public static final VolleyGesture INACTIVE = new VolleyGesture(-1, -1, -1, 0L);
+        private static final Type<VolleyGesture> TYPE =
+                new Type<>(ResourceLocation.fromNamespaceAndPath(Tennory.MODID, "volley_gesture"));
+        private static final StreamCodec<RegistryFriendlyByteBuf, VolleyGesture> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, VolleyGesture::playerId, ByteBufCodecs.VAR_INT, VolleyGesture::profileId,
+                ByteBufCodecs.VAR_INT, VolleyGesture::chamber, ByteBufCodecs.VAR_LONG, VolleyGesture::startTick,
+                VolleyGesture::new);
+
+        @Override
+        public Type<VolleyGesture> type() {
+            return TYPE;
+        }
     }
 
     public record SpecialAction() implements CustomPacketPayload {

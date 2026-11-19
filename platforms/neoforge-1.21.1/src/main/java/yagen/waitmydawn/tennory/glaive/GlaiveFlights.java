@@ -32,6 +32,11 @@ public final class GlaiveFlights {
         return flight != null && !flight.stack().isEmpty();
     }
 
+    public static boolean hasActiveProjectile(ServerPlayer player) {
+        GlaiveFlightItem flight = player.getExistingDataOrNull(TennoryRegistries.STORED_GLAIVE);
+        return flight != null && flight.projectileId().isPresent();
+    }
+
     static void launch(ServerPlayer player, ItemStack stack) {
         if (!player.isAlive() || player.isSpectator() || player.getMainHandItem() != stack
                 || !(stack.getItem() instanceof GlaiveWeaponItem) || hasStoredWeapon(player)) {

@@ -14,6 +14,7 @@ import yagen.waitmydawn.tennory.glaive.GlaiveReadiness;
 import yagen.waitmydawn.tennory.glaive.GlaiveWeaponItem;
 import yagen.waitmydawn.tennory.network.WeaponPayloads;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
+import yagen.waitmydawn.tennory.weapon.VolleyWeaponItem;
 
 @EventBusSubscriber(modid = Tennory.MODID, value = Dist.CLIENT)
 public final class WeaponInput {
@@ -52,7 +53,7 @@ public final class WeaponInput {
             }
         }
         if (event.isAttack() && player != null && player.getMainHandItem().getItem() instanceof GlaiveWeaponItem
-                && GlaiveReadiness.deployment(player, 0.0F) < 1.0F) {
+                && !GlaiveReadiness.ready(player)) {
             event.setSwingHand(false);
             event.setCanceled(true);
         }
@@ -66,6 +67,7 @@ public final class WeaponInput {
         Minecraft client = Minecraft.getInstance();
         LocalPlayer player = client.player;
         return client.screen == null && player != null && player.isAlive() && !player.isSpectator()
-                && player.getExistingData(TennoryRegistries.CLIENT_GLAIVE_IN_FLIGHT).orElse(false);
+                && (player.getMainHandItem().getItem() instanceof VolleyWeaponItem
+                || player.getExistingData(TennoryRegistries.CLIENT_GLAIVE_IN_FLIGHT).orElse(false));
     }
 }

@@ -2,6 +2,7 @@ package yagen.waitmydawn.tennory.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -29,6 +30,17 @@ public final class TennoryClientSetup {
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(TennoryRegistries.GLAIVE_PROJECTILE.get(), GlaiveRenderer::new);
+        event.registerEntityRenderer(TennoryRegistries.VOLLEY_PROJECTILE.get(), VolleyRenderer::new);
+    }
+
+    @SubscribeEvent
+    public static void addPlayerLayers(EntityRenderersEvent.AddLayers event) {
+        for (var skin : event.getSkins()) {
+            PlayerRenderer renderer = event.getSkin(skin);
+            if (renderer != null) {
+                renderer.addLayer(new FanCompanionLayer(renderer, event.getContext().getItemInHandRenderer()));
+            }
+        }
     }
 
     @SubscribeEvent

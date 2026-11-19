@@ -1,10 +1,6 @@
 package yagen.waitmydawn.tennory.combat;
 
 public final class GlaiveRules {
-    public static final int DURABILITY = 2035;
-    public static final double ATTACK_DAMAGE = 9.0;
-    public static final double ATTACK_SPEED = 1.8;
-    public static final double ATTACK_REACH = 4.0;
     public static final int CHARGE_TICKS = 20;
     public static final int BOUNCE_LIMIT = 3;
     public static final double RICOCHET_RADIUS = 4.0;
@@ -12,7 +8,6 @@ public final class GlaiveRules {
     public static final double THROW_SPEED = 1.0;
     public static final double RETURN_SPEED = 1.25;
     public static final double BLAST_RADIUS = 4.0;
-    public static final double BLAST_DAMAGE_MULTIPLIER = 2.25;
 
     private GlaiveRules() {
     }

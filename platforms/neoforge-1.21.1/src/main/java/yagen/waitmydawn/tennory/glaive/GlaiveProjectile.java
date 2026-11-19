@@ -31,6 +31,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import yagen.waitmydawn.tennory.combat.GlaiveRules;
+import yagen.waitmydawn.tennory.combat.WeaponStats;
 import yagen.waitmydawn.tennory.network.WeaponPayloads;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
 
@@ -327,7 +328,7 @@ public final class GlaiveProjectile extends Projectile {
             float exposure = Explosion.getSeenPercent(center, target);
             if (exposure > 0.0F) {
                 double falloff = 1.0 - 0.4 * Mth.clamp(2.0 * Math.sqrt(distanceSquared) / radius - 1.0, 0.0, 1.0);
-                float damage = (float) (attackDamage * GlaiveRules.BLAST_DAMAGE_MULTIPLIER * exposure * falloff);
+                float damage = (float) (attackDamage * WeaponStats.GLAIVE.specialMultiplier() * exposure * falloff);
                 if (target.hurt(source, damage)) {
                     target.knockback(exposure * falloff, center.x - target.getX(), center.z - target.getZ());
                 }
