@@ -1,0 +1,31 @@
+{
+  "parent": "minecraft:item/handheld",
+  "loader": "neoforge:obj",
+  "model": "tennory:models/item/glaive_open.obj",
+  "automatic_culling": false,
+  "emissive_ambient": false,
+  "textures": {
+    "glaive": "tennory:item/glaive",
+    "particle": "tennory:item/glaive"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        14,
+        -16,
+        15
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.95,
+        0.95,
+        0.95
+      ]
+    }
+  },
+  "flip_v": true
+}

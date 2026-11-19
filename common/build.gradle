@@ -1,0 +1,9 @@
+plugins { id 'java-library' }
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(rootProject.findProperty('platform_java') ?: '17'))
+layout.buildDirectory = rootProject.layout.buildDirectory.dir('shared/common')
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    // The compiler follows the platform JDK; release restricts common code to the oldest runtime and API.
+    options.release = 17
+}

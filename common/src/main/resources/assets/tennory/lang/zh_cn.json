@@ -1,0 +1,16 @@
+{
+  "creativetab.tennory.items": "战甲军械",
+  "entity.tennory.glaive": "战刃 Prime",
+  "item.tennory.glaive": "战刃 Prime",
+  "key.categories.tennory": "战甲军械",
+  "key.tennory.weapon_special": "武器特殊动作",
+  "message.tennory.glaive.return_waiting": "战刃 Prime 已回收。腾出一个物品栏空位即可取回。",
+  "message.tennory.glaive.volatile": "战刃模式：%s",
+  "mode.tennory.glaive.normal": "普通",
+  "mode.tennory.glaive.volatile": "易爆",
+  "tooltip.tennory.glaive.mode": "当前模式：%s",
+  "tooltip.tennory.glaive.controls_hint": "按住 Shift 查看操作",
+  "tooltip.tennory.glaive.throw": "按住 %s 蓄力，松手投掷。",
+  "tooltip.tennory.glaive.detonate": "飞行中按 %s 引爆并回收。",
+  "tooltip.tennory.glaive.mode_switch": "按 %s + %s 切换模式。"
+}

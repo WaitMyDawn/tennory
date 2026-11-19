@@ -1,0 +1,16 @@
+{
+  "creativetab.tennory.items": "Tennory",
+  "entity.tennory.glaive": "Glaive Prime",
+  "item.tennory.glaive": "Glaive Prime",
+  "key.categories.tennory": "Tennory",
+  "key.tennory.weapon_special": "Weapon Special Action",
+  "message.tennory.glaive.return_waiting": "Your Glaive Prime has returned. Free a slot to receive it.",
+  "message.tennory.glaive.volatile": "Glaive mode: %s",
+  "mode.tennory.glaive.normal": "Normal",
+  "mode.tennory.glaive.volatile": "Volatile",
+  "tooltip.tennory.glaive.mode": "Mode: %s",
+  "tooltip.tennory.glaive.controls_hint": "Hold Shift to view controls",
+  "tooltip.tennory.glaive.throw": "Hold %s to charge, then release to throw.",
+  "tooltip.tennory.glaive.detonate": "Press %s in flight to detonate and recall.",
+  "tooltip.tennory.glaive.mode_switch": "Press %s + %s to switch modes."
+}
