@@ -1,0 +1,61 @@
+{
+  "name": "redeemer_right_slash",
+  "description": "The hips reverse the swing and carry the blade back out past the weapon-side shoulder.",
+  "emote": {
+    "isLoop": false,
+    "beginTick": 2,
+    "endTick": 20,
+    "stopTick": 23,
+    "degrees": true,
+    "moves": [
+      { "tick": 2, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 2, "yaw": -4, "roll": 0 },
+        "rightArm": { "pitch": -58, "yaw": 6, "roll": 21 },
+        "leftArm": { "pitch": -45, "yaw": -11, "roll": -24 },
+        "rightLeg": { "pitch": -1, "yaw": 4, "roll": 5 },
+        "leftLeg": { "pitch": -6, "yaw": -8, "roll": -8 },
+        "rightItem": { "pitch": -43, "yaw": 10, "roll": 27 }
+      },
+      { "tick": 6, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 1, "yaw": 26, "roll": 8 },
+        "rightArm": { "pitch": -90, "yaw": -35, "roll": 12 },
+        "leftArm": { "pitch": -52, "yaw": -25, "roll": -18 },
+        "rightLeg": { "pitch": -13, "yaw": 15, "roll": 9 },
+        "leftLeg": { "pitch": 10, "yaw": 7, "roll": -9 },
+        "rightItem": { "pitch": -48, "yaw": 14, "roll": -62 }
+      },
+      { "tick": 10, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 7, "yaw": -22, "roll": -7 },
+        "rightArm": { "pitch": -90, "yaw": 26, "roll": 20 },
+        "leftArm": { "pitch": -42, "yaw": -37, "roll": -39 },
+        "rightLeg": { "pitch": -18, "yaw": -15, "roll": 10 },
+        "leftLeg": { "pitch": 10, "yaw": -16, "roll": -9 },
+        "rightItem": { "pitch": -55, "yaw": -17, "roll": 56 }
+      },
+      { "tick": 13, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 4, "yaw": -33, "roll": -8 },
+        "rightArm": { "pitch": -77, "yaw": 49, "roll": 32 },
+        "leftArm": { "pitch": -34, "yaw": -40, "roll": -38 },
+        "rightLeg": { "pitch": -14, "yaw": -18, "roll": 13 },
+        "leftLeg": { "pitch": 11, "yaw": -24, "roll": -9 },
+        "rightItem": { "pitch": -51, "yaw": -21, "roll": 68 }
+      },
+      { "tick": 17, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 3, "yaw": -13, "roll": -4 },
+        "rightArm": { "pitch": -66, "yaw": 25, "roll": 26 },
+        "leftArm": { "pitch": -42, "yaw": -24, "roll": -31 },
+        "rightLeg": { "pitch": -9, "yaw": -7, "roll": 8 },
+        "leftLeg": { "pitch": 2, "yaw": -13, "roll": -8 },
+        "rightItem": { "pitch": -47, "yaw": -8, "roll": 39 }
+      },
+      { "tick": 20, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 2, "yaw": -4, "roll": 0 },
+        "rightArm": { "pitch": -58, "yaw": 6, "roll": 21 },
+        "leftArm": { "pitch": -45, "yaw": -11, "roll": -24 },
+        "rightLeg": { "pitch": -1, "yaw": 4, "roll": 5 },
+        "leftLeg": { "pitch": -6, "yaw": -8, "roll": -8 },
+        "rightItem": { "pitch": -43, "yaw": 10, "roll": 27 }
+      }
+    ]
+  }
+}

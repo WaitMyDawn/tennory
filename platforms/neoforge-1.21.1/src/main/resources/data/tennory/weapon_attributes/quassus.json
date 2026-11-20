@@ -1,0 +1,29 @@
+{
+  "attributes": {
+    "category": "tennory_warfan",
+    "two_handed": true,
+    "attacks": [
+      {
+        "hitbox": "HORIZONTAL_PLANE",
+        "angle": 112,
+        "upswing": 0.44,
+        "animation": "tennory:quassus_right_cut",
+        "swing_sound": { "id": "bettercombat:sickle_slash", "pitch": 1.08 }
+      },
+      {
+        "hitbox": "HORIZONTAL_PLANE",
+        "angle": 116,
+        "upswing": 0.42,
+        "animation": "tennory:quassus_left_cut",
+        "swing_sound": { "id": "bettercombat:sickle_slash", "pitch": 1.16 }
+      },
+      {
+        "hitbox": "HORIZONTAL_PLANE",
+        "angle": 138,
+        "upswing": 0.56,
+        "animation": "tennory:quassus_cross_cut",
+        "swing_sound": { "id": "bettercombat:sickle_slash", "pitch": 0.88 }
+      }
+    ]
+  }
+}

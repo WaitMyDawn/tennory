@@ -26,9 +26,11 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import yagen.waitmydawn.tennory.Tennory;
 import yagen.waitmydawn.tennory.combat.VolleyProfile;
+import yagen.waitmydawn.tennory.compat.WeaponAttackCompat;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
 
 public final class VolleyProjectile extends Projectile {
+    private static final VolleyProfile[] PROFILES = VolleyProfile.values();
     private static final ResourceKey<DamageType> VOLLEY_DAMAGE = ResourceKey.create(Registries.DAMAGE_TYPE,
             ResourceLocation.fromNamespaceAndPath(Tennory.MODID, "weapon_volley"));
     private static final EntityDataAccessor<Integer> PROFILE =
@@ -40,7 +42,9 @@ public final class VolleyProjectile extends Projectile {
     private static final EntityDataAccessor<CompoundTag> LAUNCH =
             SynchedEntityData.defineId(VolleyProjectile.class, EntityDataSerializers.COMPOUND_TAG);
 
-    private float rayDamage;
+    private double baseDamage;
+    private double damageMultiplier;
+    private WeaponAttackCompat.Snapshot attack = WeaponAttackCompat.NATIVE;
     private double traveled;
     private VolleyWeaponItem.ShotSound shotSound;
     private long launchTick;
@@ -56,7 +60,9 @@ public final class VolleyProjectile extends Projectile {
         noCulling = true;
     }
 
-    VolleyProjectile(ServerPlayer owner, VolleyProfile profile, int chamber, double damage, VolleyWeaponItem.ShotSound shotSound) {
+    VolleyProjectile(ServerPlayer owner, VolleyProfile profile, int chamber, double baseDamage, double damageMultiplier,
+                     VolleyWeaponItem.ShotSound shotSound,
+                     WeaponAttackCompat.Snapshot attack) {
         this(TennoryRegistries.VOLLEY_PROJECTILE.get(), owner.level());
         setOwner(owner);
         this.shotSound = shotSound;
@@ -64,7 +70,9 @@ public final class VolleyProjectile extends Projectile {
         entityData.set(PROFILE, profile.ordinal());
         entityData.set(CHAMBER, chamber);
         launchTick = level().getGameTime() + profile.releaseTicks();
-        rayDamage = (float) (damage / profile.rays(chamber).size());
+        this.baseDamage = baseDamage;
+        this.damageMultiplier = damageMultiplier;
+        this.attack = attack;
     }
 
     @Override
@@ -89,7 +97,7 @@ public final class VolleyProjectile extends Projectile {
     }
 
     public VolleyProfile profile() {
-        return VolleyProfile.values()[entityData.get(PROFILE)];
+        return PROFILES[entityData.get(PROFILE)];
     }
 
     @Nullable
@@ -103,7 +111,8 @@ public final class VolleyProjectile extends Projectile {
         }
         long tick = level().isClientSide() ? tickCount : level().getGameTime();
         double age = tick - launchTick - 1.0 + partialTick;
-        return Math.clamp(age * profile().speed(), 0.0, VolleyProfile.RANGE);
+        VolleyProfile profile = profile();
+        return Math.clamp(age * profile.speed(), 0.0, profile.range());
     }
 
     public boolean stopped(int index, double depth) {
@@ -121,8 +130,9 @@ public final class VolleyProjectile extends Projectile {
             Arrays.fill(visualImpactDepths, Double.POSITIVE_INFINITY);
         }
         double[] impactDepths = visualImpactDepths;
-        double speed = profile().speed();
-        double endDepth = Math.min(VolleyProfile.RANGE, Math.ceil(depth / speed) * speed);
+        VolleyProfile profile = profile();
+        double speed = profile.speed();
+        double endDepth = Math.min(profile.range(), Math.ceil(depth / speed) * speed);
         // Trace once per travel step. This bounds the render before the server's hit mask arrives.
         visuallyStopped = traceSegment(shot, checkedVisualDepth, endDepth, visuallyStopped | entityData.get(STOPPED),
                 (index, impact) -> {
@@ -135,7 +145,7 @@ public final class VolleyProjectile extends Projectile {
     @Override
     public boolean shouldRenderAtSqrDistance(double distanceSquared) {
         // The tracked entity stays at the launch point while the rendered rays travel downrange.
-        double radius = 2.0 * VolleyProfile.RANGE * getViewScale();
+        double radius = 2.0 * profile().range() * getViewScale();
         return distanceSquared < radius * radius;
     }
 
@@ -145,8 +155,9 @@ public final class VolleyProjectile extends Projectile {
             super.tick();
             return;
         }
+        VolleyProfile profile = profile();
         Entity owner = getOwner();
-        if (owner == null || !owner.isAlive() || owner.level() != level() || traveled >= VolleyProfile.RANGE) {
+        if (owner == null || !owner.isAlive() || owner.level() != level() || traveled >= profile.range()) {
             discard();
             return;
         }
@@ -163,7 +174,7 @@ public final class VolleyProjectile extends Projectile {
             discard();
             return;
         }
-        double endDepth = Math.min(VolleyProfile.RANGE, traveled + profile().speed());
+        double endDepth = Math.min(profile.range(), traveled + profile.speed());
         Map<Entity, Integer> hits = new LinkedHashMap<>();
         int newMask = traceSegment(rays, traveled, endDepth, stopped, (index, impact) -> {
             if (impact.target() != null) {
@@ -173,7 +184,8 @@ public final class VolleyProjectile extends Projectile {
         if (!hits.isEmpty()) {
             DamageSource source = damageSources().source(VOLLEY_DAMAGE, this, owner);
             // One hit event per target keeps armor and knockback independent of pellet order.
-            hits.forEach((target, pellets) -> target.hurt(source, rayDamage * pellets));
+            int portions = rays.directions().size();
+            hits.forEach((target, pellets) -> attack.hurt(target, source, baseDamage, damageMultiplier, pellets, portions));
         }
         entityData.set(STOPPED, newMask);
         traveled = endDepth;

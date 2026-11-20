@@ -42,7 +42,8 @@ final class VolleyRenderer extends EntityRenderer<VolleyProjectile> {
     public void render(VolleyProjectile volley, float yaw, float partialTick, PoseStack pose,
                        MultiBufferSource buffers, int light) {
         double depth = volley.renderedDepth(partialTick);
-        if (depth < 0.6 || depth >= VolleyProfile.RANGE) {
+        double range = volley.profile().range();
+        if (depth < 0.6 || depth >= range) {
             return;
         }
         VolleyProjectile.Rays rays = volley.rays();
@@ -53,6 +54,7 @@ final class VolleyRenderer extends EntityRenderer<VolleyProjectile> {
         VertexConsumer vertices = buffers.getBuffer(blades ? BLADES : EMBERS);
         PoseStack.Pose transform = pose.last();
         Vec3 camera = entityRenderDispatcher.camera.getPosition().subtract(rays.origin());
+        float rangeVisibility = fadeIn(range - depth, 0.0, 5.0);
         volley.traceVisualImpacts(depth);
         for (int index = 0; index < rays.directions().size(); index++) {
             if (volley.stopped(index, depth)) {
@@ -60,18 +62,18 @@ final class VolleyRenderer extends EntityRenderer<VolleyProjectile> {
             }
             Vec3 direction = rays.directions().get(index);
             if (blades) {
-                renderBlade(vertices, transform, rays.up(), direction, camera, depth, index, light);
+                renderBlade(vertices, transform, rays.up(), direction, camera, depth, rangeVisibility, index, light);
             } else {
-                renderEmber(vertices, transform, rays.up(), direction, camera, depth, index);
+                renderEmber(vertices, transform, rays.up(), direction, camera, depth, rangeVisibility, index);
             }
         }
     }
 
     private static void renderEmber(VertexConsumer vertices, PoseStack.Pose pose, Vec3 up,
-                                    Vec3 direction, Vec3 camera, double depth, int index) {
+                                    Vec3 direction, Vec3 camera, double depth, float rangeVisibility, int index) {
         Vec3 tip = direction.scale(depth);
         Vec3 toCamera = camera.subtract(tip);
-        float visibility = fadeIn(depth, 0.75, 2.6) * fadeIn(toCamera.length(), 0.9, 2.75) * rangeFade(depth);
+        float visibility = fadeIn(depth, 0.75, 2.6) * fadeIn(toCamera.length(), 0.9, 2.75) * rangeVisibility;
         if (visibility <= 0.015F) {
             return;
         }
@@ -98,10 +100,10 @@ final class VolleyRenderer extends EntityRenderer<VolleyProjectile> {
     }
 
     private static void renderBlade(VertexConsumer vertices, PoseStack.Pose pose, Vec3 aimUp,
-                                    Vec3 direction, Vec3 camera, double depth, int index, int light) {
+                                    Vec3 direction, Vec3 camera, double depth, float rangeVisibility, int index, int light) {
         Vec3 tip = direction.scale(depth);
         Vec3 toCamera = camera.subtract(tip);
-        float visibility = fadeIn(toCamera.length(), 0.55, 1.5) * rangeFade(depth);
+        float visibility = fadeIn(toCamera.length(), 0.55, 1.5) * rangeVisibility;
         if (visibility <= 0.015F) {
             return;
         }
@@ -119,10 +121,6 @@ final class VolleyRenderer extends EntityRenderer<VolleyProjectile> {
         Vec3 tail = tip.subtract(forward.scale(0.47));
         particle(vertices, pose, tail, tip, side.scale(0.113), normal,
                 fadeColor(0xE9EEE0D3, visibility), fadeColor(0xFFFFFFFF, visibility), light);
-    }
-
-    private static float rangeFade(double depth) {
-        return fadeIn(VolleyProfile.RANGE - depth, 0.0, 5.0);
     }
 
     static void renderMuzzleFlash(PoseStack.Pose pose, MultiBufferSource buffers, float muzzle, float amount) {

@@ -1,0 +1,67 @@
+{
+  "name": "quassus_right_cut",
+  "description": "Right fan draws outward and cuts across the body as the left side yields.",
+  "emote": {
+    "isLoop": false,
+    "beginTick": 2,
+    "endTick": 20,
+    "stopTick": 23,
+    "degrees": true,
+    "moves": [
+      { "tick": 2, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 4, "yaw": -7, "roll": 0 },
+        "rightArm": { "pitch": -85, "yaw": 5, "roll": 21 },
+        "leftArm": { "pitch": -48, "yaw": -15, "roll": -26 },
+        "rightLeg": { "pitch": 0, "yaw": 2, "roll": 4 },
+        "leftLeg": { "pitch": -7, "yaw": -6, "roll": -6 },
+        "rightItem": { "pitch": -34, "yaw": 14, "roll": 36 },
+        "leftItem": { "pitch": -35, "yaw": -29, "roll": -25 }
+      },
+      { "tick": 6, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": -6, "yaw": -24, "roll": -6 },
+        "rightArm": { "pitch": -69, "yaw": -17, "roll": 15 },
+        "leftArm": { "pitch": -51, "yaw": -19, "roll": -25 },
+        "rightLeg": { "pitch": -12, "yaw": 15, "roll": 9 },
+        "leftLeg": { "pitch": 12, "yaw": 13, "roll": -9 },
+        "rightItem": { "pitch": -57, "yaw": 12, "roll": 12 },
+        "leftItem": { "pitch": -36, "yaw": -28, "roll": -23 }
+      },
+      { "tick": 10, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 9, "yaw": 16, "roll": 3 },
+        "rightArm": { "pitch": -91, "yaw": 23, "roll": 18 },
+        "leftArm": { "pitch": -46, "yaw": -22, "roll": -27 },
+        "rightLeg": { "pitch": 15, "yaw": 23, "roll": 9 },
+        "leftLeg": { "pitch": -18, "yaw": 17, "roll": -11 },
+        "rightItem": { "pitch": -68, "yaw": 23, "roll": 14 },
+        "leftItem": { "pitch": -37, "yaw": -28, "roll": -22 }
+      },
+      { "tick": 13, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 7, "yaw": 26, "roll": 6 },
+        "rightArm": { "pitch": -80, "yaw": 39, "roll": 29 },
+        "leftArm": { "pitch": -48, "yaw": -20, "roll": -26 },
+        "rightLeg": { "pitch": 16, "yaw": 29, "roll": 8 },
+        "leftLeg": { "pitch": -15, "yaw": 17, "roll": -9 },
+        "rightItem": { "pitch": -62, "yaw": 34, "roll": 20 },
+        "leftItem": { "pitch": -35, "yaw": -27, "roll": -24 }
+      },
+      { "tick": 17, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 3, "yaw": 12, "roll": 2 },
+        "rightArm": { "pitch": -79, "yaw": 23, "roll": 24 },
+        "leftArm": { "pitch": -50, "yaw": -17, "roll": -26 },
+        "rightLeg": { "pitch": 9, "yaw": 11, "roll": 7 },
+        "leftLeg": { "pitch": -11, "yaw": 6, "roll": -6 },
+        "rightItem": { "pitch": -48, "yaw": 22, "roll": 28 },
+        "leftItem": { "pitch": -35, "yaw": -28, "roll": -25 }
+      },
+      { "tick": 20, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 4, "yaw": -7, "roll": 0 },
+        "rightArm": { "pitch": -85, "yaw": 5, "roll": 21 },
+        "leftArm": { "pitch": -48, "yaw": -15, "roll": -26 },
+        "rightLeg": { "pitch": 0, "yaw": 2, "roll": 4 },
+        "leftLeg": { "pitch": -7, "yaw": -6, "roll": -6 },
+        "rightItem": { "pitch": -34, "yaw": 14, "roll": 36 },
+        "leftItem": { "pitch": -35, "yaw": -29, "roll": -25 }
+      }
+    ]
+  }
+}

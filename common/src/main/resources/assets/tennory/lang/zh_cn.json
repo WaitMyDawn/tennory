@@ -6,6 +6,8 @@
   "item.tennory.quassus": "威震武扇 Prime",
   "entity.tennory.weapon_volley": "武器齐射",
   "death.attack.tennory.weapon_volley": "%1$s 被 %2$s 齐射击杀了",
+  "death.attack.tennory.glaive_burst": "%1$s 被 %2$s 的战刃引爆击杀了",
+  "death.attack.tennory.glaive_burst.item": "%1$s 被 %2$s 的战刃引爆击杀了",
   "message.tennory.volley.free_offhand": "腾出副手即可使用双扇。",
   "message.tennory.volley.recharging": "所有弹仓均在冷却中。",
   "tooltip.tennory.volley.fire": "按 %s 击发下一个就绪的弹仓。",

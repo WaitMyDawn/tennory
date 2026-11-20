@@ -1,0 +1,11 @@
+{
+  "attacks": {
+    "tennory:redeemer_shot": {
+      "kind": "melee",
+      "critical_chance": 0.24,
+      "critical_damage": 2.2,
+      "status_chance": 0.09,
+      "damage_distribution": { "blast": 1.0 }
+    }
+  }
+}

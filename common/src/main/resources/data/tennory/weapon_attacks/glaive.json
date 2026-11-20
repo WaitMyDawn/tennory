@@ -1,0 +1,20 @@
+{
+  "attacks": {
+    "tennory:glaive_throw": {
+      "kind": "melee",
+      "critical_chance": 0.26,
+      "critical_damage": 2.4,
+      "status_chance": 0.34,
+      "damage_distribution": { "impact": 0.15, "puncture": 0.15, "slash": 0.70 },
+      "forced_procs": ["slash", "impact"]
+    },
+    "tennory:glaive_burst": {
+      "kind": "melee",
+      "critical_chance": 0.26,
+      "critical_damage": 2.4,
+      "status_chance": 0.34,
+      "damage_distribution": { "blast": 1.0 },
+      "forced_procs": ["slash", "impact"]
+    }
+  }
+}

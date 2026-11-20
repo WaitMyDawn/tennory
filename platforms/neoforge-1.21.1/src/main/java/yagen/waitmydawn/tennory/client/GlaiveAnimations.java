@@ -30,6 +30,7 @@ import yagen.waitmydawn.tennory.client.WeaponArmRig.ArmPose;
 import yagen.waitmydawn.tennory.client.WeaponPlayerPose.BaseOffsets;
 import yagen.waitmydawn.tennory.client.WeaponPlayerPose.Stance;
 import yagen.waitmydawn.tennory.glaive.GlaiveReadiness;
+import yagen.waitmydawn.tennory.glaive.GlaiveItem;
 import yagen.waitmydawn.tennory.glaive.GlaiveWeaponItem;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
 
@@ -83,6 +84,10 @@ public final class GlaiveAnimations implements IClientItemExtensions {
             event.setCanceled(true);
             return;
         }
+        if (motion == null && held.getItem() instanceof GlaiveItem
+                && GlaiveReadiness.deployment(player, event.getPartialTick()) >= 1.0F && renderCombo(event, player, held)) {
+            return;
+        }
         // After a catch, the vanilla hand renderer can retain its previous stack until its equip transition finishes.
         if (!(held.getItem() instanceof GlaiveWeaponItem) || motion == null && held == event.getItemStack()) {
             return;
@@ -98,6 +103,27 @@ public final class GlaiveAnimations implements IClientItemExtensions {
                 player.level(), event.getPackedLight(), OverlayTexture.NO_OVERLAY, player.getId());
         pose.popPose();
         event.setCanceled(true);
+    }
+
+    private static boolean renderCombo(RenderHandEvent event, LocalPlayer player, ItemStack stack) {
+        var swing = BetterCombatSwing.sample(player, event.getPartialTick());
+        var step = swing == null ? null : GlaiveComboStep.byAnimation(swing.animation());
+        if (step == null) {
+            return false;
+        }
+        var view = step.sample(swing.progress(), swing.impact());
+        HumanoidArm arm = player.getMainArm();
+        boolean left = arm == HumanoidArm.LEFT;
+        PoseStack pose = event.getPoseStack();
+        pose.pushPose();
+        pose.translate(left ? -view.x() : view.x(), view.y(), view.z());
+        pose.mulPose(view.rotation(arm));
+        pose.scale(0.70F, 0.70F, 0.70F);
+        Minecraft.getInstance().getItemRenderer().renderStatic(player, stack, ItemDisplayContext.NONE, left, pose,
+                event.getMultiBufferSource(), player.level(), event.getPackedLight(), OverlayTexture.NO_OVERLAY, player.getId());
+        pose.popPose();
+        event.setCanceled(true);
+        return true;
     }
 
     private static void poseWeapon(PoseStack pose, HumanoidArm arm, float equip, float draw, float cast) {

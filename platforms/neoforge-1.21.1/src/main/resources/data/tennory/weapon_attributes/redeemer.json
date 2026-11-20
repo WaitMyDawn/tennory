@@ -1,0 +1,28 @@
+{
+  "attributes": {
+    "category": "tennory_gunblade",
+    "attacks": [
+      {
+        "hitbox": "HORIZONTAL_PLANE",
+        "angle": 106,
+        "upswing": 0.46,
+        "animation": "tennory:redeemer_left_slash",
+        "swing_sound": { "id": "bettercombat:sickle_slash", "pitch": 0.96 }
+      },
+      {
+        "hitbox": "HORIZONTAL_PLANE",
+        "angle": 110,
+        "upswing": 0.44,
+        "animation": "tennory:redeemer_right_slash",
+        "swing_sound": { "id": "bettercombat:sickle_slash", "pitch": 1.02 }
+      },
+      {
+        "hitbox": "FORWARD_BOX",
+        "angle": 44,
+        "upswing": 0.54,
+        "animation": "tennory:redeemer_thrust",
+        "swing_sound": { "id": "bettercombat:sickle_slash", "pitch": 1.18 }
+      }
+    ]
+  }
+}

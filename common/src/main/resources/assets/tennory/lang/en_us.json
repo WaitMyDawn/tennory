@@ -6,6 +6,8 @@
   "item.tennory.quassus": "Quassus Prime",
   "entity.tennory.weapon_volley": "Weapon Volley",
   "death.attack.tennory.weapon_volley": "%1$s was struck by %2$s's volley",
+  "death.attack.tennory.glaive_burst": "%1$s was caught in %2$s's Glaive burst",
+  "death.attack.tennory.glaive_burst.item": "%1$s was caught in %2$s's Glaive burst",
   "message.tennory.volley.free_offhand": "Free your off hand to use both fans.",
   "message.tennory.volley.recharging": "All chambers are recharging.",
   "tooltip.tennory.volley.fire": "Press %s to fire the next ready chamber.",

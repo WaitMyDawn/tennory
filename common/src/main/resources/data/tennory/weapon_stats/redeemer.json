@@ -1,0 +1,14 @@
+{
+  "critical_chance": 0.24,
+  "critical_damage": 2.2,
+  "status_chance": 0.30,
+  "status_duration": 6.0,
+  "category": "melee",
+  "riven_disposition": 0.7,
+  "damage_distribution": {
+    "impact": 0.10,
+    "puncture": 0.20,
+    "slash": 0.70
+  },
+  "mod_slots": ["madurai", "madurai", "none", "none", "none", "none", "none", "none"]
+}

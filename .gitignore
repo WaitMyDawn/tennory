@@ -19,3 +19,4 @@ __pycache__/
 DEVELOPMENT.md
 /docs/*
 !/docs/readme-media/
+!/docs/changelog/

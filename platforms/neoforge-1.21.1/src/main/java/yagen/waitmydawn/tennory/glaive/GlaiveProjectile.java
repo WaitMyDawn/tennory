@@ -6,20 +6,23 @@ import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Explosion;
@@ -30,12 +33,17 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
+import yagen.waitmydawn.tennory.Tennory;
 import yagen.waitmydawn.tennory.combat.GlaiveRules;
 import yagen.waitmydawn.tennory.combat.WeaponStats;
+import yagen.waitmydawn.tennory.compat.WeaponAttackCompat;
 import yagen.waitmydawn.tennory.network.WeaponPayloads;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
 
 public final class GlaiveProjectile extends Projectile {
+    private static final ResourceLocation THROWN_ATTACK = ResourceLocation.fromNamespaceAndPath(Tennory.MODID, "glaive_throw");
+    private static final ResourceLocation BURST_ATTACK = ResourceLocation.fromNamespaceAndPath(Tennory.MODID, "glaive_burst");
+    private static final ResourceKey<DamageType> BURST_DAMAGE = ResourceKey.create(Registries.DAMAGE_TYPE, BURST_ATTACK);
     private static final double SURFACE_OFFSET = 0.001;
     private static final double ENTITY_MARGIN = 0.25;
     private static final double CATCH_DISTANCE = 0.65;
@@ -51,6 +59,8 @@ public final class GlaiveProjectile extends Projectile {
     private boolean detonated;
     private boolean impactDetonation;
     private float attackDamage;
+    private WeaponAttackCompat.Snapshot thrownAttack = WeaponAttackCompat.NATIVE;
+    private WeaponAttackCompat.Snapshot burstAttack = WeaponAttackCompat.NATIVE;
     @Nullable
     private Entity lastHitTarget;
     private final Set<UUID> returnHits = new HashSet<>();
@@ -63,12 +73,14 @@ public final class GlaiveProjectile extends Projectile {
         super(type, level);
     }
 
-    GlaiveProjectile(ServerLevel level, ServerPlayer owner, float attackDamage, Item weapon, boolean impactDetonation) {
+    GlaiveProjectile(ServerLevel level, ServerPlayer owner, float attackDamage, ItemStack weapon, boolean impactDetonation) {
         this(TennoryRegistries.GLAIVE_PROJECTILE.get(), level);
         setOwner(owner);
         this.attackDamage = attackDamage;
         this.impactDetonation = impactDetonation;
-        entityData.set(DISPLAY_STACK, new ItemStack(weapon));
+        thrownAttack = WeaponAttackCompat.capture(owner, weapon, THROWN_ATTACK);
+        burstAttack = WeaponAttackCompat.capture(owner, weapon, BURST_ATTACK);
+        entityData.set(DISPLAY_STACK, new ItemStack(weapon.getItem()));
     }
 
     @Override
@@ -147,7 +159,7 @@ public final class GlaiveProjectile extends Projectile {
             setPos(target == null && !hit.insideBlock() ? hit.position().add(normal.scale(SURFACE_OFFSET)) : hit.position());
             if (target != null) {
                 lastHitTarget = target;
-                target.hurt(damageSources().thrown(this, owner), attackDamage);
+                thrownAttack.hurt(target, damageSources().thrown(this, owner), attackDamage);
             }
             bounces++;
             if (impactDetonation) {
@@ -273,7 +285,7 @@ public final class GlaiveProjectile extends Projectile {
                 entity -> entity != owner && entity.isAlive() && !entity.isSpectator())) {
             AABB bounds = target.getBoundingBox().inflate(ENTITY_MARGIN);
             if ((bounds.contains(start) || bounds.clip(start, end).isPresent()) && returnHits.add(target.getUUID())) {
-                target.hurt(source, attackDamage);
+                thrownAttack.hurt(target, source, attackDamage);
             }
         }
         setDeltaMovement(direction.scale(speed));
@@ -317,7 +329,7 @@ public final class GlaiveProjectile extends Projectile {
         Vec3 center = position();
         bankTowardOwner(owner.getEyePosition().subtract(center));
         double radius = GlaiveRules.BLAST_RADIUS;
-        DamageSource source = damageSources().explosion(this, owner);
+        DamageSource source = damageSources().source(BURST_DAMAGE, this, owner);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, new AABB(center, center).inflate(radius + SURFACE_OFFSET),
                 entity -> entity != owner && entity.isAlive() && !entity.isSpectator())) {
             double distanceSquared = target.getBoundingBox().distanceToSqr(center);
@@ -327,8 +339,8 @@ public final class GlaiveProjectile extends Projectile {
             float exposure = Explosion.getSeenPercent(center, target);
             if (exposure > 0.0F) {
                 double falloff = 1.0 - 0.4 * Mth.clamp(2.0 * Math.sqrt(distanceSquared) / radius - 1.0, 0.0, 1.0);
-                float damage = (float) (attackDamage * WeaponStats.GLAIVE.specialMultiplier() * exposure * falloff);
-                if (target.hurt(source, damage)) {
+                double multiplier = WeaponStats.GLAIVE.specialMultiplier() * exposure * falloff;
+                if (burstAttack.hurt(target, source, attackDamage, multiplier, 1, 1)) {
                     target.knockback(exposure * falloff, center.x - target.getX(), center.z - target.getZ());
                 }
             }

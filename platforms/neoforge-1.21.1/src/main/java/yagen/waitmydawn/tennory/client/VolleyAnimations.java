@@ -32,6 +32,7 @@ import yagen.waitmydawn.tennory.client.WeaponPlayerPose.Stance;
 import yagen.waitmydawn.tennory.combat.VolleyProfile;
 import yagen.waitmydawn.tennory.weapon.FanItem;
 import yagen.waitmydawn.tennory.weapon.GunbladeItem;
+import yagen.waitmydawn.tennory.weapon.RedeemerItem;
 
 @EventBusSubscriber(modid = Tennory.MODID, value = Dist.CLIENT)
 public final class VolleyAnimations {
@@ -70,25 +71,29 @@ public final class VolleyAnimations {
         ItemStack held = player.getItemInHand(event.getHand());
         boolean companion = !main && FanItem.needsCompanion(player) && event.getItemStack().isEmpty();
         if (companion || held.getItem() instanceof FanItem && held.is(event.getItemStack().getItem())) {
-            drawFirstPersonFan(event, player, arm, companion ? player.getMainHandItem() : held,
-                    VolleyMotion.sample(player, event.getPartialTick()), companion);
+            var special = fanMotion(player, event.getPartialTick());
+            var combo = special == null ? QuassusBetterCombat.sampleFirstPerson(player, event.getPartialTick()) : null;
+            var move = special != null ? special.fanHand(arm) : VolleyMotion.FanHand.REST;
+            drawFirstPersonFan(event, player, arm, companion ? player.getMainHandItem() : held, move,
+                    combo == null ? null : combo.hand(arm), companion);
             event.setCanceled(true);
         } else if (main && held.getItem() instanceof GunbladeItem) {
-            GunbladeView.Pose pose = GUN_VIEW.sample(player, event.getPartialTick(), event.getSwingProgress());
-            if (pose.aim() > 0.0F) {
-                drawFirstPersonGun(event, player, arm, held, pose);
+            var swing = held.getItem() instanceof RedeemerItem ? BetterCombatSwing.sample(player, event.getPartialTick()) : null;
+            var step = swing == null ? null : RedeemerComboStep.byAnimation(swing.animation());
+            var combo = step == null ? null : step.sample(swing.progress(), swing.impact());
+            GunbladeView.Pose pose = GUN_VIEW.sample(player, event.getPartialTick(), combo == null ? event.getSwingProgress() : 1.0F);
+            if (combo != null || pose.aim() > 0.0F) {
+                drawFirstPersonGun(event, player, arm, held, pose, combo);
                 event.setCanceled(true);
             }
         }
     }
 
     private static void drawFirstPersonFan(RenderHandEvent event, LocalPlayer player, HumanoidArm arm, ItemStack stack,
-                                           VolleyMotion.Frame frame, boolean companion) {
-        VolleyMotion.FanHand move = frame != null && frame.profile() == VolleyProfile.QUASSUS
-                ? frame.fanHand(arm) : VolleyMotion.FanHand.REST;
+                                           VolleyMotion.FanHand move, QuassusComboStep.Hand combo, boolean companion) {
         float side = viewSide(arm);
         boolean left = arm == HumanoidArm.LEFT;
-        float swing = Mth.sin(Mth.sqrt(event.getSwingProgress()) * Mth.PI);
+        float swing = combo == null ? Mth.sin(Mth.sqrt(event.getSwingProgress()) * Mth.PI) : 0.0F;
         float x = side * ((left ? 0.81F : 0.69F) + move.lateral() - 0.28F * swing);
         float y = (left ? -0.49F : -0.52F) + move.lift() + 0.14F * swing;
         y -= companion ? 0.0F : 0.55F * event.getEquipProgress();
@@ -98,6 +103,12 @@ public final class VolleyAnimations {
         Quaternionf wrist = new Quaternionf().rotationYXZ(
                 (baseYaw + side * move.yaw()) * DEG, (10.0F + move.pitch() - 55.0F * swing) * DEG,
                 (baseRoll + side * (move.roll() + 31.0F * swing)) * DEG);
+        if (combo != null) {
+            x += side * combo.lateral();
+            y += combo.lift();
+            z -= combo.reach();
+            combo.aim(wrist, side);
+        }
         PoseStack poses = event.getPoseStack();
         poses.pushPose();
         poses.translate(x, y, z);
@@ -107,28 +118,32 @@ public final class VolleyAnimations {
     }
 
     private static void drawFirstPersonGun(RenderHandEvent event, LocalPlayer player, HumanoidArm arm, ItemStack stack,
-                                           GunbladeView.Pose pose) {
+                                           GunbladeView.Pose pose, MeleeViewPose combo) {
         float aim = pose.aim();
         float recoil = pose.recoil();
         float side = viewSide(arm);
         float swing = event.getSwingProgress();
         float swingRoot = Mth.sqrt(swing) * Mth.PI;
         float swingArc = Mth.sin(swingRoot);
-        float x = side * Mth.lerp(aim, 0.56F - 0.4F * swingArc, 0.47F);
-        float y = Mth.lerp(aim, -0.52F - 0.60F * event.getEquipProgress() + 0.2F * Mth.sin(2.0F * swingRoot),
-                -0.33F + 0.014F * recoil);
-        float z = Mth.lerp(aim, -0.72F - 0.2F * Mth.sin(swing * Mth.PI), -0.67F + 0.067F * recoil);
-        // Match the vanilla swing at zero blend so the melee handoff has no discontinuity.
-        Quaternionf sword = new Quaternionf().rotationYXZ(side * (45.0F - 20.0F * Mth.sin(swing * swing * Mth.PI)) * DEG,
-                0.0F, -side * 20.0F * swingArc * DEG)
-                .rotateX(-80.0F * swingArc * DEG)
-                .rotateY(-85.0F * side * DEG)
-                .rotateZ(side * 24.0F * DEG);
+        float x = combo == null ? 0.56F - 0.4F * swingArc : combo.x();
+        float y = combo == null ? -0.52F + 0.2F * Mth.sin(2.0F * swingRoot) : combo.y();
+        float z = combo == null ? -0.72F - 0.2F * Mth.sin(swing * Mth.PI) : combo.z();
+        // Vanilla equip progress drops with attack cooldown. Combo poses already include recovery.
+        if (combo == null) {
+            y -= 0.60F * event.getEquipProgress();
+        }
+        Quaternionf sword = combo != null ? combo.rotation(arm)
+                : new Quaternionf().rotationYXZ(side * (45.0F - 20.0F * Mth.sin(swing * swing * Mth.PI)) * DEG,
+                        0.0F, -side * 20.0F * swingArc * DEG)
+                        .rotateX(-80.0F * swingArc * DEG)
+                        .rotateY(-85.0F * side * DEG)
+                        .rotateZ(side * 24.0F * DEG);
         Quaternionf aimed = new Quaternionf().rotationYXZ(side * 13.0F * DEG,
                 (-82.0F - 3.0F * recoil) * DEG, 0.0F).rotateY(-side * 34.0F * DEG);
         PoseStack poses = event.getPoseStack();
         poses.pushPose();
-        poses.translate(x, y, z);
+        poses.translate(side * Mth.lerp(aim, x, 0.47F), Mth.lerp(aim, y, -0.33F + 0.014F * recoil),
+                Mth.lerp(aim, z, -0.67F + 0.067F * recoil));
         poses.mulPose(sword.slerp(aimed, aim));
         drawWeapon(player, stack, arm, poses, event.getMultiBufferSource(), event.getPackedLight(), 0.65F, pose.flash() * aim);
         poses.popPose();
@@ -163,11 +178,18 @@ public final class VolleyAnimations {
         Quaternionf wrist;
         float muzzle = 0.0F;
         if (fan) {
-            wrist = fanWrist(limbRotation, arm, fanMotion(player, partialTick));
+            var special = fanMotion(player, partialTick);
+            wrist = fanWrist(limbRotation, arm, special);
+            if (special == null) {
+                QuassusBetterCombat.rotateWrist(player, arm, partialTick, wrist);
+            }
         } else {
             wrist = limbRotation.rotateX(-Mth.HALF_PI).rotateY(Mth.PI - side * Mth.HALF_PI)
                     .rotateZ(-side * GUN_SWORD_ANGLE * DEG);
             if (player.getMainHandItem().getItem() instanceof GunbladeItem && arm == player.getMainArm()) {
+                if (usesRedeemerMeleePose(player)) {
+                    BetterCombatSwing.applyItemRotation(player, arm, partialTick, wrist);
+                }
                 GunbladeView.Pose gun = gunPose(player, partialTick);
                 Quaternionf aimed = new Quaternionf().rotationYXZ(model.head.yRot,
                         -Mth.HALF_PI + model.head.xRot - 4.5F * DEG * gun.recoil(), 0.0F);
@@ -193,7 +215,8 @@ public final class VolleyAnimations {
     public static boolean usesFanGuard(AbstractClientPlayer player) {
         return player.getMainHandItem().getItem() instanceof FanItem
                 && !(player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof ArmorItem)
-                && WeaponPlayerPose.canPose(player);
+                && WeaponPlayerPose.canPose(player)
+                && !usesAnimatedFanPose(player, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
     }
 
     public static BaseOffsets poseModel(PlayerModel<?> model, AbstractClientPlayer player, float walk, WeaponArmRig rig) {
@@ -204,7 +227,7 @@ public final class VolleyAnimations {
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
         if (fan) {
-            return poseFan(model, player, walk, rig, partialTick);
+            return usesAnimatedFanPose(player, partialTick) ? null : poseFan(model, player, walk, rig, partialTick);
         }
         GunbladeView.Pose gun = gunPose(player, partialTick);
         if (gun.aim() <= 0.0F) {
@@ -222,13 +245,22 @@ public final class VolleyAnimations {
 
     private static GunbladeView.Pose gunPose(AbstractClientPlayer player, float partialTick) {
         GunbladeView view = player instanceof LocalPlayer ? GUN_VIEW : REMOTE_GUN_VIEWS.computeIfAbsent(player, key -> new GunbladeView());
-        boolean swinging = player.swinging && player.swingingArm == InteractionHand.MAIN_HAND;
+        boolean swinging = player.swinging && player.swingingArm == InteractionHand.MAIN_HAND || usesRedeemerMeleePose(player);
         return view.sample(player, partialTick, swinging ? 1.0F : 0.0F);
+    }
+
+    private static boolean usesRedeemerMeleePose(AbstractClientPlayer player) {
+        return player.getMainHandItem().getItem() instanceof RedeemerItem && BetterCombatSwing.hasPlayerAnimation(player);
     }
 
     private static VolleyMotion.Frame fanMotion(AbstractClientPlayer player, float partialTick) {
         VolleyMotion.Frame frame = VolleyMotion.sample(player, partialTick);
         return frame != null && frame.profile() == VolleyProfile.QUASSUS ? frame : null;
+    }
+
+    private static boolean usesAnimatedFanPose(AbstractClientPlayer player, float partialTick) {
+        // Specials need the segmented guard and wrist poses even during a melee animation's fade-out.
+        return QuassusBetterCombat.ownsThirdPersonPose(player) && fanMotion(player, partialTick) == null;
     }
 
     private static BaseOffsets poseFan(PlayerModel<?> model, AbstractClientPlayer player, float walk, WeaponArmRig rig,

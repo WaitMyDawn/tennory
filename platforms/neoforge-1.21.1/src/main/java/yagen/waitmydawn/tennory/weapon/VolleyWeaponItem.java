@@ -3,6 +3,7 @@ package yagen.waitmydawn.tennory.weapon;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -12,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import yagen.waitmydawn.tennory.combat.Chambers;
 import yagen.waitmydawn.tennory.combat.VolleyProfile;
 import yagen.waitmydawn.tennory.combat.WeaponStats;
+import yagen.waitmydawn.tennory.compat.WeaponAttackCompat;
 import yagen.waitmydawn.tennory.network.WeaponPayloads;
 import yagen.waitmydawn.tennory.registries.TennoryRegistries;
 
@@ -40,6 +42,8 @@ public abstract class VolleyWeaponItem extends MeleeWeaponItem {
         return true;
     }
 
+    protected abstract ResourceLocation specialAttack(int chamber);
+
     public final void fireSpecial(ServerPlayer player, ItemStack stack) {
         if (!canFire(player, stack)) {
             player.displayClientMessage(Component.translatable("message.tennory.volley.free_offhand"), true);
@@ -54,8 +58,9 @@ public abstract class VolleyWeaponItem extends MeleeWeaponItem {
             player.displayClientMessage(Component.translatable("message.tennory.volley.recharging"), true);
             return;
         }
-        double damage = player.getAttributeValue(Attributes.ATTACK_DAMAGE) * specialMultiplier;
-        VolleyProjectile volley = new VolleyProjectile(player, profile, chamber, damage, shotSound);
+        double damage = player.getAttributeValue(Attributes.ATTACK_DAMAGE);
+        var attack = WeaponAttackCompat.capture(player, stack, specialAttack(chamber));
+        VolleyProjectile volley = new VolleyProjectile(player, profile, chamber, damage, specialMultiplier, shotSound, attack);
         if (!player.serverLevel().addFreshEntity(volley) || volley.isRemoved()) {
             return;
         }

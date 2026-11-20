@@ -1,0 +1,61 @@
+{
+  "name": "glaive_rising_cut",
+  "description": "The main arm drives a rising cut from a low windup as the hips and shoulders turn.",
+  "emote": {
+    "isLoop": false,
+    "beginTick": 2,
+    "endTick": 20,
+    "stopTick": 23,
+    "degrees": true,
+    "moves": [
+      { "tick": 2, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 4, "yaw": -5, "roll": 0 },
+        "rightArm": { "pitch": -60, "yaw": 6, "roll": 28 },
+        "leftArm": { "pitch": -36, "yaw": -19, "roll": -20 },
+        "rightLeg": { "pitch": -4, "yaw": 1, "roll": 5 },
+        "leftLeg": { "pitch": -8, "yaw": -8, "roll": -8 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": 0, "yaw": 0, "roll": 0 }
+      },
+      { "tick": 6, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 11, "yaw": -26, "roll": -7 },
+        "rightArm": { "pitch": -34, "yaw": 28, "roll": 33 },
+        "leftArm": { "pitch": -52, "yaw": -9, "roll": -20 },
+        "rightLeg": { "pitch": -15, "yaw": 9, "roll": 10 },
+        "leftLeg": { "pitch": 9, "yaw": -8, "roll": -7 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": -24, "yaw": 5, "roll": 1 }
+      },
+      { "tick": 10, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": -4, "yaw": 15, "roll": 7 },
+        "rightArm": { "pitch": -102, "yaw": -12, "roll": 20 },
+        "leftArm": { "pitch": -44, "yaw": -27, "roll": -28 },
+        "rightLeg": { "pitch": 10, "yaw": 22, "roll": 8 },
+        "leftLeg": { "pitch": -20, "yaw": 12, "roll": -10 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": 22, "yaw": 2, "roll": -12 }
+      },
+      { "tick": 13, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": -9, "yaw": 28, "roll": 5 },
+        "rightArm": { "pitch": -115, "yaw": -20, "roll": 22 },
+        "leftArm": { "pitch": -38, "yaw": -30, "roll": -34 },
+        "rightLeg": { "pitch": 12, "yaw": 20, "roll": 8 },
+        "leftLeg": { "pitch": -16, "yaw": 11, "roll": -8 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": 39, "yaw": -7, "roll": -14 }
+      },
+      { "tick": 17, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 0, "yaw": 13, "roll": 2 },
+        "rightArm": { "pitch": -86, "yaw": -7, "roll": 28 },
+        "leftArm": { "pitch": -48, "yaw": -24, "roll": -27 },
+        "rightLeg": { "pitch": 3, "yaw": 7, "roll": 6 },
+        "leftLeg": { "pitch": -10, "yaw": 3, "roll": -8 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": 17, "yaw": 0, "roll": -8 }
+      },
+      { "tick": 20, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 4, "yaw": -5, "roll": 0 },
+        "rightArm": { "pitch": -60, "yaw": 6, "roll": 28 },
+        "leftArm": { "pitch": -36, "yaw": -19, "roll": -20 },
+        "rightLeg": { "pitch": -4, "yaw": 1, "roll": 5 },
+        "leftLeg": { "pitch": -8, "yaw": -8, "roll": -8 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": 0, "yaw": 0, "roll": 0 }
+      }
+    ]
+  }
+}

@@ -45,7 +45,7 @@ public final class GlaiveFlights {
 
         ServerLevel level = player.serverLevel();
         GlaiveProjectile projectile = new GlaiveProjectile(level, player,
-                (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE), stack.getItem(),
+                (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE), stack,
                 GlaiveWeaponItem.detonatesOnImpact(stack));
         projectile.setPos(player.getEyePosition().add(0.0, -0.15, 0.0));
         projectile.setDeltaMovement(player.getLookAngle().scale(GlaiveRules.THROW_SPEED));

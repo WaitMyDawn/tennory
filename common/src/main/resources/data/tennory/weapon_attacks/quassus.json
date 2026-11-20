@@ -1,0 +1,20 @@
+{
+  "attacks": {
+    "tennory:quassus_first_sweep": {
+      "kind": "melee",
+      "critical_chance": 0.35,
+      "critical_damage": 2.5,
+      "status_chance": 0.01,
+      "damage_distribution": { "puncture": 0.40, "slash": 0.60 },
+      "forced_procs": ["slash"]
+    },
+    "tennory:quassus_second_sweep": {
+      "kind": "melee",
+      "critical_chance": 0.35,
+      "critical_damage": 2.5,
+      "status_chance": 0.02,
+      "damage_distribution": { "puncture": 0.40, "slash": 0.60 },
+      "forced_procs": ["slash"]
+    }
+  }
+}

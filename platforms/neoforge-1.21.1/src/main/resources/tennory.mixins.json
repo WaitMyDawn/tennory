@@ -4,6 +4,7 @@
   "package": "yagen.waitmydawn.tennory.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "BetterCombatAnimationMixin",
     "VolleyPlayerModelMixin",
     "VolleyItemInHandLayerMixin"
   ],

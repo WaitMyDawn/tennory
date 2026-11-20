@@ -1,0 +1,77 @@
+{
+  "name": "glaive_orbit_cut",
+  "description": "The open disc circles away from the main hand and returns as the arm rises to catch it.",
+  "emote": {
+    "isLoop": false,
+    "beginTick": 2,
+    "endTick": 20,
+    "stopTick": 23,
+    "degrees": true,
+    "moves": [
+      { "tick": 2, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 4, "yaw": -5, "roll": 0 },
+        "rightArm": { "pitch": -60, "yaw": 6, "roll": 28 },
+        "leftArm": { "pitch": -36, "yaw": -19, "roll": -20 },
+        "rightLeg": { "pitch": -4, "yaw": 1, "roll": 5 },
+        "leftLeg": { "pitch": -8, "yaw": -8, "roll": -8 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": 0, "yaw": 0, "roll": 0 }
+      },
+      { "tick": 4, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": -3, "yaw": -21, "roll": -5 },
+        "rightArm": { "pitch": -83, "yaw": 34, "roll": 31 },
+        "leftArm": { "pitch": -56, "yaw": -10, "roll": -18 },
+        "rightLeg": { "pitch": -15, "yaw": 13, "roll": 10 },
+        "leftLeg": { "pitch": 11, "yaw": -7, "roll": -11 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": 0, "yaw": -8, "roll": 9 }
+      },
+      { "tick": 6, "easing": "LINEAR",
+        "torso": { "pitch": 6, "yaw": 7, "roll": 4 },
+        "rightArm": { "pitch": -97, "yaw": 21, "roll": 14 },
+        "leftArm": { "pitch": -64, "yaw": -21, "roll": -20 },
+        "rightLeg": { "pitch": 10, "yaw": 11, "roll": 10 },
+        "leftLeg": { "pitch": -15, "yaw": 10, "roll": -7 },
+        "rightItem": { "x": 7, "y": 5, "z": -10, "pitch": 82, "yaw": -30, "roll": 14 }
+      },
+      { "tick": 9, "easing": "LINEAR",
+        "torso": { "pitch": 9, "yaw": 22, "roll": 6 },
+        "rightArm": { "pitch": -92, "yaw": 9, "roll": 10 },
+        "leftArm": { "pitch": -53, "yaw": -26, "roll": -25 },
+        "rightLeg": { "pitch": 15, "yaw": 16, "roll": 12 },
+        "leftLeg": { "pitch": -19, "yaw": 17, "roll": -10 },
+        "rightItem": { "x": 6, "y": 7, "z": -17, "pitch": 160, "yaw": -29, "roll": 5 }
+      },
+      { "tick": 12, "easing": "LINEAR",
+        "torso": { "pitch": 5, "yaw": 28, "roll": 1 },
+        "rightArm": { "pitch": -102, "yaw": -5, "roll": 11 },
+        "leftArm": { "pitch": -43, "yaw": -27, "roll": -29 },
+        "rightLeg": { "pitch": 13, "yaw": 22, "roll": 10 },
+        "leftLeg": { "pitch": -14, "yaw": 15, "roll": -9 },
+        "rightItem": { "x": -5, "y": 9, "z": -14, "pitch": 236, "yaw": 21, "roll": -13 }
+      },
+      { "tick": 15, "easing": "LINEAR",
+        "torso": { "pitch": 0, "yaw": 15, "roll": -3 },
+        "rightArm": { "pitch": -104, "yaw": -9, "roll": 18 },
+        "leftArm": { "pitch": -48, "yaw": -19, "roll": -23 },
+        "rightLeg": { "pitch": 6, "yaw": 10, "roll": 8 },
+        "leftLeg": { "pitch": -10, "yaw": 2, "roll": -9 },
+        "rightItem": { "x": -5, "y": 6, "z": -7, "pitch": 306, "yaw": 26, "roll": -11 }
+      },
+      { "tick": 18, "easing": "LINEAR",
+        "torso": { "pitch": -2, "yaw": 4, "roll": 0 },
+        "rightArm": { "pitch": -83, "yaw": 7, "roll": 27 },
+        "leftArm": { "pitch": -39, "yaw": -19, "roll": -24 },
+        "rightLeg": { "pitch": -2, "yaw": 4, "roll": 6 },
+        "leftLeg": { "pitch": -8, "yaw": -6, "roll": -9 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": 360, "yaw": 0, "roll": 0 }
+      },
+      { "tick": 20, "easing": "EASEINOUTQUAD",
+        "torso": { "pitch": 4, "yaw": -5, "roll": 0 },
+        "rightArm": { "pitch": -60, "yaw": 6, "roll": 28 },
+        "leftArm": { "pitch": -36, "yaw": -19, "roll": -20 },
+        "rightLeg": { "pitch": -4, "yaw": 1, "roll": 5 },
+        "leftLeg": { "pitch": -8, "yaw": -8, "roll": -8 },
+        "rightItem": { "x": 0, "y": 0, "z": 0, "pitch": 360, "yaw": 0, "roll": 0 }
+      }
+    ]
+  }
+}
