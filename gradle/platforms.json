@@ -1,4 +1,9 @@
 {
+  "Forge1201": {
+    "directory": "forge-1.20.1",
+    "javaVersion": 17,
+    "loom": false
+  },
   "NeoForge1211": {
     "directory": "neoforge-1.21.1",
     "javaVersion": 21,

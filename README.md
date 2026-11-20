@@ -2,6 +2,8 @@
 
 Warframe-inspired weapons for Minecraft.
 
+Tennory supports NeoForge 1.21.1 and Forge 1.20.1. Better Combat integration is optional on both versions.
+
 ## Weapons
 
 Use the regular attack button for melee and **Weapon Special Action** (middle mouse by default) for each weapon's special move.
@@ -47,6 +49,8 @@ Hold the warfans in your main hand with your off hand free to wield the pair. Th
 
 ## How to obtain them
 
+### NeoForge 1.21.1
+
 Drink an Ominous Bottle and approach a Trial Spawner in a Trial Chamber to start an Ominous Trial. Each Ominous Trial Spawner chooses either keys (30%) or consumables (70%) for the round, then ejects one reward per player it recorded. Use an Ominous Trial Key to open an Ominous Vault you have yet to unlock.
 
 | Source | Chance of any Tennory weapon | Chance of a specific weapon |
@@ -56,6 +60,10 @@ Drink an Ominous Bottle and approach a Trial Spawner in a Trial Chamber to start
 | Clearing one Ominous Trial Spawner solo, from the spawner itself | 1.4% | about 0.47% |
 
 Each successful bonus roll gives one uniformly selected weapon from the `TennoryWeaponPool`, in addition to the vanilla rewards. A vault can give both a Heavy Core and a weapon on the same opening. In multiplayer, a spawner that chooses consumables rolls the weapon bonus separately for each consumable reward it ejects.
+
+### Forge 1.20.1
+
+Ancient City chests have a 7.5% chance to give one additional Tennory weapon. Monster Room dungeon chests have a 2% chance. Each successful roll selects one of the three weapons with equal probability in addition to the vanilla chest loot.
 
 All three weapons are also available in the Tennory creative tab.
 

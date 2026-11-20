@@ -1,0 +1,6 @@
+{
+  "type": "tennory:append_independent_table",
+  "conditions": [{ "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/simple_dungeon" }],
+  "table": "tennory:rewards/tennory_weapon_pool",
+  "chance": 0.02
+}

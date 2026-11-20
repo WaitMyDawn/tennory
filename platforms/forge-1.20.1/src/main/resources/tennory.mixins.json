@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "yagen.waitmydawn.tennory.client.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "tennory.refmap.json",
+  "client": [
+    "BetterCombatAnimationMixin",
+    "VolleyPlayerModelMixin",
+    "VolleyItemInHandLayerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

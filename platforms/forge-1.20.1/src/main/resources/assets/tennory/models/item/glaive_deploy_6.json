@@ -1,0 +1,11 @@
+{
+  "loader": "forge:obj",
+  "model": "tennory:models/item/glaive_deploy_6.obj",
+  "automatic_culling": false,
+  "emissive_ambient": false,
+  "flip_v": true,
+  "textures": {
+    "glaive": "tennory:item/glaive",
+    "particle": "tennory:item/glaive"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "tennory:item/glaive"
+  },
+  "base": {
+    "parent": "tennory:item/glaive_open"
+  },
+  "perspectives": {
+    "firstperson_righthand": {
+      "parent": "tennory:item/glaive_folded"
+    },
+    "firstperson_lefthand": {
+      "parent": "tennory:item/glaive_folded"
+    },
+    "thirdperson_righthand": {
+      "parent": "tennory:item/glaive_folded"
+    },
+    "thirdperson_lefthand": {
+      "parent": "tennory:item/glaive_folded"
+    },
+    "ground": {
+      "parent": "tennory:item/glaive_folded"
+    }
+  }
+}

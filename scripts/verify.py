@@ -12,6 +12,10 @@ import tomllib
 from zipfile import BadZipFile, ZipFile
 
 
+COMMON_ANIMATION_DIRECTORY = "assets/tennory/player_animations/"
+FORGE_ANIMATION_DIRECTORY = "assets/tennory/attack_animations/"
+
+
 def properties(path):
     """Read the UTF-8 Java Properties subset emitted by scaffold.py."""
     result = {}
@@ -31,6 +35,43 @@ def properties(path):
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def packaged_path(loader, source_path):
+    if loader == "forge" and source_path.startswith(COMMON_ANIMATION_DIRECTORY):
+        return FORGE_ANIMATION_DIRECTORY + source_path.removeprefix(COMMON_ANIMATION_DIRECTORY)
+    return source_path
+
+
+def verify_tennory_data(project, loader, archive):
+    entries = set(archive.namelist())
+    for damage in ("glaive_burst", "weapon_volley"):
+        definition = json.loads(archive.read(f"data/tennory/damage_type/{damage}.json"))
+        require(definition["message_id"] == f"tennory.{damage}", f"Wrong damage type: {damage}")
+    explosion_tag = "data/minecraft/tags/damage_type/is_explosion.json"
+    if explosion_tag in entries:
+        values = json.loads(archive.read(explosion_tag))["values"]
+        require(all((entry if isinstance(entry, str) else entry["id"]) != "tennory:glaive_burst" for entry in values),
+                "Glaive burst must use its own damage type without the vanilla explosion tag")
+    for weapon in ("glaive", "redeemer", "quassus"):
+        attributes = json.loads(archive.read(f"data/tennory/weapon_attributes/{weapon}.json"))["attributes"]
+        require(len(attributes["attacks"]) == 3, f"Missing Better Combat combo: {weapon}")
+        for attack in attributes["attacks"]:
+            namespace, animation = attack["animation"].split(":", 1)
+            source = f"assets/{namespace}/player_animations/{animation}.json"
+            require(packaged_path(loader, source) in entries,
+                    f"Missing Better Combat animation: {attack['animation']}")
+    if loader == "forge":
+        manifest = archive.read("META-INF/MANIFEST.MF").decode("utf-8")
+        require("MixinConfigs: tennory.mixins.json" in manifest.splitlines(), "Forge manifest lacks Tennory mixins")
+        mixins = json.loads(archive.read("tennory.mixins.json"))
+        refmap = json.loads(archive.read(mixins["refmap"]))["mappings"]
+        path = mixins["package"].replace(".", "/")
+        for name in ("VolleyPlayerModelMixin", "VolleyItemInHandLayerMixin"):
+            require(bool(refmap.get(f"{path}/{name}")), f"Missing remapped injection targets for {name}")
+        pool = "data/tennory/loot_tables/rewards/tennory_weapon_pool.json"
+        source = project / "common/src/main/resources" / pool.replace("/loot_tables/", "/loot_table/")
+        require(archive.read(pool) == source.read_bytes(), "Forge loot pool differs from the shared pool")
 
 
 def verify_jar(project, target, jar):
@@ -54,7 +95,7 @@ def verify_jar(project, target, jar):
         for path in (project / "common/src/main/resources").rglob("*"):
             if path.is_file():
                 relative = path.relative_to(project / "common/src/main/resources").as_posix()
-                require(archive.read(relative) == path.read_bytes(), f"Shared resource differs: {relative}")
+                require(archive.read(packaged_path(loader, relative)) == path.read_bytes(), f"Shared resource differs: {relative}")
         if loader == "fabric":
             metadata = json.loads(archive.read("fabric.mod.json"))
             for key, property_key in (("id", "mod_id"), ("version", "mod_version"), ("name", "mod_name"),
@@ -91,6 +132,7 @@ def verify_jar(project, target, jar):
             require(dependencies[loader]["versionRange"] == local["loader_range"], "Wrong loader compatibility range")
             if loader == "forge":
                 require(json.loads(archive.read("pack.mcmeta"))["pack"]["pack_format"] > 0, "Missing Forge resource-pack format")
+        verify_tennory_data(project, loader, archive)
     return {"target": target, "jar": str(jar), "sha256": hashlib.sha256(jar.read_bytes()).hexdigest(), "status": "passed"}
 
 

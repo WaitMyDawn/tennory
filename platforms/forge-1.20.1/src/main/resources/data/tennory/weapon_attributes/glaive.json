@@ -1,0 +1,29 @@
+{
+  "attributes": {
+    "attack_range": 2.5,
+    "category": "tennory_glaive",
+    "attacks": [
+      {
+        "hitbox": "VERTICAL_PLANE",
+        "angle": 108,
+        "upswing": 0.46,
+        "animation": "tennory:glaive_rising_cut",
+        "swing_sound": { "id": "bettercombat:sickle_slash", "pitch": 1.13 }
+      },
+      {
+        "hitbox": "HORIZONTAL_PLANE",
+        "angle": 118,
+        "upswing": 0.44,
+        "animation": "tennory:glaive_back_sweep",
+        "swing_sound": { "id": "bettercombat:sickle_slash", "pitch": 1.01 }
+      },
+      {
+        "hitbox": "HORIZONTAL_PLANE",
+        "angle": 132,
+        "upswing": 0.54,
+        "animation": "tennory:glaive_orbit_cut",
+        "swing_sound": { "id": "bettercombat:sickle_slash", "pitch": 0.92 }
+      }
+    ]
+  }
+}
